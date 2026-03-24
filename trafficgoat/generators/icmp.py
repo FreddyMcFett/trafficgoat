@@ -7,7 +7,8 @@ import time
 from scapy.all import IP, ICMP, send
 
 from trafficgoat.generators.base import BaseGenerator
-from trafficgoat.config import GeneratorConfig, StatsCollector
+from trafficgoat.config import GeneratorConfig
+from trafficgoat.stats import StatsCollector
 
 
 class ICMPGenerator(BaseGenerator):

@@ -8,7 +8,8 @@ import time
 from scapy.all import IP, TCP, UDP, ICMP, send, RandShort
 
 from trafficgoat.generators.base import BaseGenerator
-from trafficgoat.config import GeneratorConfig, parse_ports, StatsCollector
+from trafficgoat.config import GeneratorConfig, parse_ports
+from trafficgoat.stats import StatsCollector
 
 
 class MaliciousGenerator(BaseGenerator):

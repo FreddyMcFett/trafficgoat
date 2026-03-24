@@ -7,7 +7,8 @@ import requests
 from urllib3.exceptions import InsecureRequestWarning
 
 from trafficgoat.generators.base import BaseGenerator
-from trafficgoat.config import GeneratorConfig, parse_ports, StatsCollector
+from trafficgoat.config import GeneratorConfig, parse_ports
+from trafficgoat.stats import StatsCollector
 
 # Suppress SSL warnings for testing
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
