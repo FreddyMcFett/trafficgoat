@@ -1,215 +1,176 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="row g-3 mb-4">
-    <!-- Control Panel -->
-    <div class="col-lg-4">
-        <div class="card bg-dark border-secondary h-100">
-            <div class="card-header p-0">
-                <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="auto-tab" data-bs-toggle="tab" data-bs-target="#auto-panel" type="button" role="tab">
-                            <i class="bi bi-lightning-charge-fill text-info"></i> Auto
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="targeted-tab" data-bs-toggle="tab" data-bs-target="#targeted-panel" type="button" role="tab">
-                            <i class="bi bi-crosshair"></i> Targeted
-                        </button>
-                    </li>
-                </ul>
+<!-- Top Status Row -->
+<div class="row g-3 mb-3">
+    <div class="col-sm-6 col-xl-3">
+        <div class="forti-widget">
+            <div class="widget-icon bg-primary-subtle">
+                <i class="bi bi-box-seam text-primary"></i>
             </div>
-            <div class="card-body">
-                <div class="tab-content">
-                    <!-- Auto Traffic Panel -->
-                    <div class="tab-pane fade show active" id="auto-panel" role="tabpanel">
-                        <p class="text-muted small mb-3">Generate varied traffic to 1000s of destinations across many protocols. No configuration needed.</p>
+            <div class="widget-content">
+                <div class="widget-label">Total Packets</div>
+                <div class="widget-value" id="stat-packets">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="forti-widget">
+            <div class="widget-icon bg-success-subtle">
+                <i class="bi bi-speedometer2 text-success"></i>
+            </div>
+            <div class="widget-content">
+                <div class="widget-label">Packet Rate</div>
+                <div class="widget-value" id="stat-pps">0 <small>pps</small></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="forti-widget">
+            <div class="widget-icon bg-info-subtle">
+                <i class="bi bi-arrow-up-circle text-info"></i>
+            </div>
+            <div class="widget-content">
+                <div class="widget-label">Data Sent</div>
+                <div class="widget-value" id="stat-bytes">0 B</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="forti-widget">
+            <div class="widget-icon bg-danger-subtle">
+                <i class="bi bi-exclamation-triangle text-danger"></i>
+            </div>
+            <div class="widget-content">
+                <div class="widget-label">Errors</div>
+                <div class="widget-value" id="stat-errors">0</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Load Level</label>
-                            <div class="btn-group w-100" role="group">
-                                <input type="radio" class="btn-check" name="load-level" id="load-light" value="light">
-                                <label class="btn btn-outline-success" for="load-light">
-                                    <i class="bi bi-speedometer"></i> Light
-                                </label>
-                                <input type="radio" class="btn-check" name="load-level" id="load-medium" value="medium" checked>
-                                <label class="btn btn-outline-warning" for="load-medium">
-                                    <i class="bi bi-speedometer2"></i> Medium
-                                </label>
-                                <input type="radio" class="btn-check" name="load-level" id="load-heavy" value="heavy">
-                                <label class="btn btn-outline-danger" for="load-heavy">
-                                    <i class="bi bi-lightning-charge-fill"></i> Heavy
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="mb-2">
-                            <small class="text-muted" id="load-description">~10000 pps to 1500 destinations — very high bandwidth</small>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <label for="auto-duration" class="form-label">Duration (s)</label>
-                                <input type="number" class="form-control bg-dark text-light border-secondary" id="auto-duration" value="120" min="10">
-                            </div>
-                            <div class="col-6 d-flex align-items-end pb-1">
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="auto-dry-run">
-                                    <label class="form-check-label" for="auto-dry-run">Dry Run</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-info btn-lg" id="btn-auto-start">
-                                <i class="bi bi-play-fill"></i> Start Auto Traffic
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Targeted Traffic Panel -->
-                    <div class="tab-pane fade" id="targeted-panel" role="tabpanel">
-                        <form id="quick-start-form">
-                            <div class="mb-3">
-                                <label for="target" class="form-label">Target IP</label>
-                                <input type="text" class="form-control bg-dark text-light border-secondary" id="target" value="127.0.0.1" required>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label for="ports" class="form-label">Ports</label>
-                                    <input type="text" class="form-control bg-dark text-light border-secondary" id="ports" value="80">
-                                </div>
-                                <div class="col-6">
-                                    <label for="mode" class="form-label">Mode</label>
-                                    <select class="form-select bg-dark text-light border-secondary" id="mode">
-                                        <option value="stress">Stress</option>
-                                        <option value="scan">Scan</option>
-                                        <option value="mixed" selected>Mixed</option>
-                                        <option value="protocol">Protocol</option>
-                                        <option value="stealth">Stealth</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label for="duration" class="form-label">Duration (s)</label>
-                                    <input type="number" class="form-control bg-dark text-light border-secondary" id="duration" value="60" min="1">
-                                </div>
-                                <div class="col-6">
-                                    <label for="rate" class="form-label">Rate (pps)</label>
-                                    <input type="number" class="form-control bg-dark text-light border-secondary" id="rate" value="100" min="1">
-                                </div>
-                            </div>
-                            <div class="mb-3" id="protocol-group" style="display:none;">
-                                <label for="protocol" class="form-label">Protocol</label>
-                                <select class="form-select bg-dark text-light border-secondary" id="protocol">
-                                    <option value="tcp">TCP</option>
-                                    <option value="udp">UDP</option>
-                                    <option value="icmp">ICMP</option>
-                                    <option value="http">HTTP</option>
-                                    <option value="dns">DNS</option>
-                                    <option value="ftp">FTP</option>
-                                    <option value="ssh">SSH</option>
-                                    <option value="smtp">SMTP</option>
-                                </select>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input type="checkbox" class="form-check-input" id="dry-run">
-                                <label class="form-check-label" for="dry-run">Dry Run (no actual packets)</label>
-                            </div>
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success btn-lg" id="btn-start">
-                                    <i class="bi bi-play-fill"></i> Start
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+<!-- Charts Row -->
+<div class="row g-3 mb-3">
+    <div class="col-xl-8">
+        <div class="forti-card">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-graph-up"></i> Traffic Rate (Packets/sec)</h6>
+                <div class="forti-card-actions">
+                    <span class="badge bg-secondary" id="stat-elapsed">0.0s elapsed</span>
                 </div>
-
-                <!-- Shared stop button -->
-                <div class="d-grid mt-3">
-                    <button type="button" class="btn btn-danger btn-lg" id="btn-stop" disabled>
-                        <i class="bi bi-stop-fill"></i> Stop
-                    </button>
+            </div>
+            <div class="forti-card-body">
+                <div class="chart-container" style="height: 280px;">
+                    <canvas id="traffic-chart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Stats Panel -->
-    <div class="col-lg-8">
-        <div class="row g-3 mb-3">
-            <div class="col-sm-6 col-md-3">
-                <div class="card bg-dark border-info text-center">
-                    <div class="card-body py-3">
-                        <div class="text-info small">PACKETS</div>
-                        <div class="fs-3 fw-bold" id="stat-packets">0</div>
-                    </div>
-                </div>
+    <div class="col-xl-4">
+        <div class="forti-card h-100">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-pie-chart"></i> Protocol Distribution</h6>
             </div>
-            <div class="col-sm-6 col-md-3">
-                <div class="card bg-dark border-success text-center">
-                    <div class="card-body py-3">
-                        <div class="text-success small">RATE</div>
-                        <div class="fs-3 fw-bold" id="stat-pps">0 <small class="fs-6">pps</small></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-md-3">
-                <div class="card bg-dark border-warning text-center">
-                    <div class="card-body py-3">
-                        <div class="text-warning small">DATA SENT</div>
-                        <div class="fs-3 fw-bold" id="stat-bytes">0 B</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-md-3">
-                <div class="card bg-dark border-danger text-center">
-                    <div class="card-body py-3">
-                        <div class="text-danger small">ERRORS</div>
-                        <div class="fs-3 fw-bold" id="stat-errors">0</div>
+            <div class="forti-card-body d-flex align-items-center justify-content-center">
+                <div class="chart-container" style="height: 250px; width: 100%; position: relative;">
+                    <canvas id="protocol-chart"></canvas>
+                    <div class="chart-center-label" id="protocol-total">
+                        <div class="chart-center-number">0</div>
+                        <div class="chart-center-text">generators</div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Generator Stats Table -->
-        <div class="card bg-dark border-secondary">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-list-check"></i> Active Generators</h5>
-                <span class="badge bg-info" id="stat-elapsed">0.0s</span>
+<!-- Generators & Activity Row -->
+<div class="row g-3 mb-3">
+    <div class="col-xl-8">
+        <div class="forti-card">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-cpu"></i> Active Generators</h6>
+                <div class="forti-card-actions">
+                    <span class="badge" id="generator-count-badge">0 active</span>
+                </div>
             </div>
-            <div class="card-body p-0">
-                <table class="table table-dark table-striped table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Generator</th>
-                            <th class="text-end">Packets</th>
-                            <th class="text-end">Rate</th>
-                            <th class="text-end">Data</th>
-                            <th class="text-end">Errors</th>
-                        </tr>
-                    </thead>
-                    <tbody id="generator-table">
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                No active generators. Choose a mode and start above.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="forti-card-body p-0">
+                <div class="forti-table-wrapper">
+                    <table class="forti-table">
+                        <thead>
+                            <tr>
+                                <th>Generator</th>
+                                <th class="text-end">Packets</th>
+                                <th class="text-end">Rate (pps)</th>
+                                <th class="text-end">Data Sent</th>
+                                <th class="text-end">Errors</th>
+                                <th class="text-end">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="generator-table">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox"></i> No active generators
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-
-        <!-- Mini Log -->
-        <div class="card bg-dark border-secondary mt-3">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-terminal"></i> Recent Activity</h6>
+    </div>
+    <div class="col-xl-4">
+        <div class="forti-card h-100">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-activity"></i> Live Activity</h6>
             </div>
-            <div class="card-body p-2">
-                <div id="mini-log" class="log-container small" style="height: 150px; overflow-y: auto; font-family: monospace;">
-                    <div class="text-muted">Waiting for activity...</div>
+            <div class="forti-card-body p-0">
+                <div id="mini-log" class="forti-log-mini">
+                    <div class="text-muted p-3 text-center"><i class="bi bi-clock-history"></i> Waiting for activity...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session History -->
+<div class="row g-3">
+    <div class="col-12">
+        <div class="forti-card">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-clock-history"></i> Recent Traffic Sessions</h6>
+                <div class="forti-card-actions">
+                    <button class="forti-btn-sm" onclick="loadHistory()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="forti-card-body p-0">
+                <div class="forti-table-wrapper">
+                    <table class="forti-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Time</th>
+                                <th>Mode</th>
+                                <th>Target</th>
+                                <th>Duration</th>
+                                <th class="text-end">Packets</th>
+                                <th class="text-end">Data</th>
+                                <th class="text-end">Errors</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table">
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox"></i> No previous sessions
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

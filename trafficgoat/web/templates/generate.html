@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Traffic Generation{% endblock %}
+{% block header_title %}Traffic Generation{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <!-- Auto Traffic -->
+    <div class="col-xl-6">
+        <div class="forti-card">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-lightning-charge-fill"></i> Auto Traffic Generation</h6>
+                <span class="badge bg-primary">Recommended</span>
+            </div>
+            <div class="forti-card-body">
+                <p class="text-muted mb-3">Generate varied traffic to thousands of destinations across multiple protocols. No configuration needed.</p>
+
+                <div class="mb-3">
+                    <label class="forti-label">Load Level</label>
+                    <div class="forti-radio-group">
+                        <label class="forti-radio-option">
+                            <input type="radio" name="load-level" id="load-light" value="light">
+                            <div class="forti-radio-card">
+                                <div class="forti-radio-title">
+                                    <i class="bi bi-speedometer text-success"></i> Light
+                                </div>
+                                <div class="forti-radio-desc">~2000 pps, 500 destinations</div>
+                            </div>
+                        </label>
+                        <label class="forti-radio-option">
+                            <input type="radio" name="load-level" id="load-medium" value="medium" checked>
+                            <div class="forti-radio-card">
+                                <div class="forti-radio-title">
+                                    <i class="bi bi-speedometer2 text-warning"></i> Medium
+                                </div>
+                                <div class="forti-radio-desc">~10000 pps, 1500 destinations</div>
+                            </div>
+                        </label>
+                        <label class="forti-radio-option">
+                            <input type="radio" name="load-level" id="load-heavy" value="heavy">
+                            <div class="forti-radio-card">
+                                <div class="forti-radio-title">
+                                    <i class="bi bi-lightning-charge-fill text-danger"></i> Heavy
+                                </div>
+                                <div class="forti-radio-desc">~50000 pps, 3000 destinations</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label for="auto-duration" class="forti-label">Duration (seconds)</label>
+                        <input type="number" class="forti-input" id="auto-duration" value="120" min="10">
+                    </div>
+                    <div class="col-6 d-flex align-items-end">
+                        <label class="forti-checkbox">
+                            <input type="checkbox" id="auto-dry-run">
+                            <span class="forti-checkbox-mark"></span>
+                            <span>Dry Run</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="forti-actions">
+                    <button type="button" class="forti-btn forti-btn-primary" id="btn-auto-start">
+                        <i class="bi bi-play-fill"></i> Start Auto Traffic
+                    </button>
+                    <button type="button" class="forti-btn forti-btn-danger" id="btn-stop-auto" disabled>
+                        <i class="bi bi-stop-fill"></i> Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Targeted Traffic -->
+    <div class="col-xl-6">
+        <div class="forti-card">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-crosshair"></i> Targeted Traffic Generation</h6>
+            </div>
+            <div class="forti-card-body">
+                <form id="quick-start-form">
+                    <div class="row mb-3">
+                        <div class="col-8">
+                            <label for="target" class="forti-label">Target IP Address</label>
+                            <input type="text" class="forti-input" id="target" value="127.0.0.1" required>
+                        </div>
+                        <div class="col-4">
+                            <label for="ports" class="forti-label">Ports</label>
+                            <input type="text" class="forti-input" id="ports" value="80">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mode" class="forti-label">Traffic Mode</label>
+                        <select class="forti-select" id="mode">
+                            <option value="stress">Stress - High-volume flood test</option>
+                            <option value="scan">Scan - Port scanning simulation</option>
+                            <option value="mixed" selected>Mixed - Realistic multi-protocol</option>
+                            <option value="protocol">Protocol - Single protocol test</option>
+                            <option value="stealth">Stealth - Low-and-slow evasion</option>
+                        </select>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="duration" class="forti-label">Duration (seconds)</label>
+                            <input type="number" class="forti-input" id="duration" value="60" min="1">
+                        </div>
+                        <div class="col-6">
+                            <label for="rate" class="forti-label">Rate (pps)</label>
+                            <input type="number" class="forti-input" id="rate" value="100" min="1">
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="protocol-group" style="display:none;">
+                        <label for="protocol" class="forti-label">Protocol</label>
+                        <select class="forti-select" id="protocol">
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                            <option value="icmp">ICMP</option>
+                            <option value="http">HTTP</option>
+                            <option value="dns">DNS</option>
+                            <option value="ftp">FTP</option>
+                            <option value="ssh">SSH</option>
+                            <option value="smtp">SMTP</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="forti-checkbox">
+                            <input type="checkbox" id="dry-run">
+                            <span class="forti-checkbox-mark"></span>
+                            <span>Dry Run (no actual packets sent)</span>
+                        </label>
+                    </div>
+
+                    <div class="forti-actions">
+                        <button type="submit" class="forti-btn forti-btn-success" id="btn-start">
+                            <i class="bi bi-play-fill"></i> Start
+                        </button>
+                        <button type="button" class="forti-btn forti-btn-danger" id="btn-stop-targeted" disabled>
+                            <i class="bi bi-stop-fill"></i> Stop
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mode Reference -->
+<div class="row g-3 mt-0">
+    <div class="col-12">
+        <div class="forti-card">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-info-circle"></i> Traffic Mode Reference</h6>
+            </div>
+            <div class="forti-card-body p-0">
+                <div class="forti-table-wrapper">
+                    <table class="forti-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 140px;">Mode</th>
+                                <th>Description</th>
+                                <th style="width: 280px;">Protocols</th>
+                                <th style="width: 100px;">Default Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="forti-badge forti-badge-primary">Auto</span></td>
+                                <td>Zero-config multi-destination traffic to 1000s of real IPs</td>
+                                <td>TCP, UDP, ICMP, DNS, NTP, HTTP/S</td>
+                                <td>2K-50K pps</td>
+                            </tr>
+                            <tr>
+                                <td><span class="forti-badge forti-badge-danger">Stress</span></td>
+                                <td>High-volume stress test with SYN, UDP, ICMP, HTTP floods</td>
+                                <td>TCP SYN, UDP, ICMP, HTTP</td>
+                                <td>Max rate</td>
+                            </tr>
+                            <tr>
+                                <td><span class="forti-badge forti-badge-warning">Scan</span></td>
+                                <td>Port scanning simulation for IDS/IPS validation</td>
+                                <td>TCP SYN, FIN, Connect</td>
+                                <td>100 pps</td>
+                            </tr>
+                            <tr>
+                                <td><span class="forti-badge forti-badge-info">Mixed</span></td>
+                                <td>Realistic weighted distribution simulating real-world traffic</td>
+                                <td>HTTP 40%, DNS 20%, TCP 15%, ICMP 10%, UDP 10%, App 5%</td>
+                                <td>200 pps</td>
+                            </tr>
+                            <tr>
+                                <td><span class="forti-badge forti-badge-success">Protocol</span></td>
+                                <td>Single protocol focus with full parameter control</td>
+                                <td>Any single protocol</td>
+                                <td>100 pps</td>
+                            </tr>
+                            <tr>
+                                <td><span class="forti-badge forti-badge-secondary">Stealth</span></td>
+                                <td>Low-and-slow evasion with randomized timing</td>
+                                <td>TCP SYN (slow)</td>
+                                <td>5 pps max</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CLI Reference -->
+<div class="row g-3 mt-0">
+    <div class="col-12">
+        <div class="forti-card">
+            <div class="forti-card-header">
+                <h6><i class="bi bi-terminal"></i> CLI Reference</h6>
+            </div>
+            <div class="forti-card-body">
+                <pre class="forti-code"><code>sudo trafficgoat auto     -l heavy -d 300        # Auto mode, heavy load
+sudo trafficgoat auto     -l light -d 60         # Auto mode, light load
+sudo trafficgoat stress   -t &lt;target&gt; -d 60 -r 500
+sudo trafficgoat scan     -t &lt;target&gt; -p 1-1024
+sudo trafficgoat mixed    -t &lt;target&gt; -r 200 -d 120
+sudo trafficgoat protocol -t &lt;target&gt; --protocol icmp -d 30
+sudo trafficgoat stealth  -t &lt;target&gt; -d 300
+sudo trafficgoat custom   -t &lt;target&gt; -c config.yaml</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
