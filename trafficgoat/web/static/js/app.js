@@ -9,6 +9,11 @@
     // Export for other pages
     window.trafficGoat = { socket: socket };
 
+    // ---- State ----
+    var lastStats = null;
+    var pollInterval = null;
+    var isConnected = false;
+
     // ---- Utility Functions ----
 
     function formatBytes(bytes) {
@@ -39,6 +44,7 @@
     // ---- Dashboard Stats ----
 
     function updateStats(data) {
+        lastStats = data;
         updateStatusBadge(data.running);
 
         var packets = document.getElementById('stat-packets');
@@ -58,6 +64,9 @@
 
         // Update button states
         updateButtons(data.running);
+
+        // Manage polling based on running state
+        managePoll(data.running);
     }
 
     function updateGeneratorTable(generators) {
@@ -90,6 +99,26 @@
         if (startBtn) startBtn.disabled = running;
         if (autoStartBtn) autoStartBtn.disabled = running;
         if (stopBtn) stopBtn.disabled = !running;
+    }
+
+    // ---- Polling fallback ----
+    // Ensures the dashboard stays up-to-date even if Socket.IO misses events
+
+    function managePoll(running) {
+        if (running && !pollInterval) {
+            // Start polling every second as a complement to Socket.IO
+            pollInterval = setInterval(function() {
+                fetch('/api/status')
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        updateStats(data);
+                    })
+                    .catch(function() {});
+            }, 1000);
+        } else if (!running && pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
     }
 
     // ---- Socket.IO Events ----
@@ -125,18 +154,25 @@
 
     socket.on('connect', function() {
         console.log('TrafficGoat: Connected to server');
+        isConnected = true;
     });
 
     socket.on('disconnect', function() {
+        isConnected = false;
         updateStatusBadge(false);
+        // When disconnected, poll to recover state on reconnect
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
     });
 
     // ---- Load Level Descriptions ----
 
     var loadDescriptions = {
-        light:  '~200 pps to 500 destinations',
-        medium: '~2000 pps to 1500 destinations',
-        heavy:  '~10000 pps to 3000 destinations'
+        light:  '~2000 pps to 500 destinations — high bandwidth',
+        medium: '~10000 pps to 1500 destinations — very high bandwidth',
+        heavy:  '~50000 pps to 3000 destinations — maximum bandwidth'
     };
 
     // ---- DOMContentLoaded ----

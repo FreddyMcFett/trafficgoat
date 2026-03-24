@@ -205,7 +205,8 @@ class AutoRawGenerator(BaseGenerator):
     """High-performance multi-destination raw packet generator.
 
     Sends TCP SYN, UDP, ICMP, DNS, and NTP packets in batches to a large pool
-    of destinations with high protocol and port variation.
+    of destinations with high protocol and port variation. Uses large payloads
+    to maximize bandwidth throughput.
     """
 
     name = "auto:raw"
@@ -229,7 +230,7 @@ class AutoRawGenerator(BaseGenerator):
         start = time.time()
 
         protocols = ['tcp_syn', 'udp', 'icmp', 'dns', 'ntp']
-        weights = [0.35, 0.20, 0.15, 0.20, 0.10]
+        weights = [0.25, 0.35, 0.15, 0.15, 0.10]
 
         while not self.should_stop():
             if self.duration > 0 and time.time() - start >= self.duration:
@@ -255,23 +256,30 @@ class AutoRawGenerator(BaseGenerator):
             self.throttle()
 
     def _build_packet(self, dst, proto):
-        """Build a single packet for the given destination and protocol."""
+        """Build a single packet for the given destination and protocol.
+
+        Uses large payloads (up to MTU ~1400 bytes) to maximize bandwidth.
+        """
         try:
             if proto == 'tcp_syn':
+                # TCP SYN with options padding for larger packets
                 return IP(dst=dst) / TCP(
                     sport=random.randint(1024, 65535),
                     dport=random.choice(TCP_PORTS),
                     flags="S",
                     seq=random.randint(0, 2**32 - 1),
+                    options=[('MSS', 1460), ('NOP', None), ('WScale', 7)],
                 )
             elif proto == 'udp':
-                payload = os.urandom(random.randint(32, 512))
+                # Large UDP payloads - near MTU for maximum bandwidth
+                payload = os.urandom(random.randint(512, 1400))
                 return IP(dst=dst) / UDP(
                     sport=random.randint(1024, 65535),
                     dport=random.choice(UDP_PORTS),
                 ) / payload
             elif proto == 'icmp':
-                payload = os.urandom(random.randint(56, 256))
+                # Large ICMP payloads
+                payload = os.urandom(random.randint(256, 1400))
                 return IP(dst=dst) / ICMP(
                     type=8, code=0,
                     id=random.randint(1, 65535),
@@ -293,6 +301,62 @@ class AutoRawGenerator(BaseGenerator):
         except Exception:
             return None
         return None
+
+
+class AutoBulkGenerator(BaseGenerator):
+    """High-bandwidth bulk data generator using large UDP packets.
+
+    Sends maximum-size UDP packets (1400 bytes payload, near MTU) in large
+    batches to generate gigabytes of traffic quickly. Designed for bandwidth
+    testing rather than protocol variety.
+    """
+
+    name = "auto:bulk"
+
+    def __init__(self, config: GeneratorConfig, stats: StatsCollector,
+                 dry_run: bool = False, destinations: list[str] | None = None,
+                 batch_size: int = 50, label: str = ""):
+        super().__init__(config, stats, dry_run)
+        self.destinations = destinations or build_destination_pool()
+        self.batch_size = batch_size
+        self._delay = self.batch_size / max(self.rate, 1)
+        if label:
+            self.name = f"auto:bulk:{label}"
+        # Pre-generate payloads for speed (avoid per-packet urandom overhead)
+        self._payloads = [os.urandom(1400) for _ in range(64)]
+
+    def generate(self):
+        self.stats.log(
+            f"{self.name}: Bulk bandwidth to "
+            f"{len(self.destinations)} destinations at {self.rate} pps "
+            f"(batch={self.batch_size}, ~{self.batch_size * 1400} bytes/batch)"
+        )
+        start = time.time()
+
+        while not self.should_stop():
+            if self.duration > 0 and time.time() - start >= self.duration:
+                break
+
+            packets = []
+            for _ in range(self.batch_size):
+                dst = random.choice(self.destinations)
+                port = random.choice(UDP_PORTS)
+                payload = random.choice(self._payloads)
+                pkt = IP(dst=dst) / UDP(
+                    sport=random.randint(1024, 65535),
+                    dport=port,
+                ) / payload
+                packets.append(pkt)
+
+            if not self.dry_run:
+                try:
+                    send(packets, verbose=0, inter=0)
+                except Exception:
+                    self.stats.update(self.name, errors=1)
+            total_bytes = sum(len(p) for p in packets)
+            self.stats.update(self.name, packets=len(packets), bytes_sent=total_bytes)
+
+            self.throttle()
 
 
 class AutoHTTPGenerator(BaseGenerator):
