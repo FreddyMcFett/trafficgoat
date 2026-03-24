@@ -44,16 +44,22 @@ def api_start():
     if os.geteuid() != 0:
         return jsonify({"error": "TrafficGoat requires root privileges for raw socket access."}), 403
 
+    mode_name = data.get("mode", "stress")
+
     config = TrafficConfig(
         target=data.get("target", "127.0.0.1"),
         ports=data.get("ports", "80"),
         duration=int(data.get("duration", 60)),
         rate=int(data.get("rate", 100)),
         threads=int(data.get("threads", 4)),
-        mode=data.get("mode", "stress"),
+        mode=mode_name,
         protocol=data.get("protocol", ""),
         dry_run=data.get("dry_run", False),
     )
+
+    # For auto mode, attach load level
+    if mode_name == "auto":
+        config.auto_load = data.get("load", "medium")
 
     stats.reset()
     new_engine = TrafficEngine(config, stats)

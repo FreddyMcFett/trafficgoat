@@ -15,11 +15,11 @@ body {
 }
 
 .card {
-    transition: transform 0.15s ease-in-out;
+    transition: box-shadow 0.15s ease-in-out;
 }
 
 .card:hover {
-    transform: translateY(-2px);
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
 }
 
 /* Stats cards */
@@ -58,12 +58,43 @@ body {
 }
 
 /* Button states */
-#btn-start:disabled {
+#btn-start:disabled,
+#btn-auto-start:disabled {
     opacity: 0.5;
 }
 
 #btn-stop:disabled {
     opacity: 0.5;
+}
+
+/* Tab styling for control panel */
+.nav-tabs .nav-link {
+    color: #8a8ab0;
+    border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: transparent;
+    border-bottom-color: transparent;
+    color: #00d4ff;
+}
+
+.nav-tabs .nav-link:hover:not(.active) {
+    border-color: transparent;
+    color: #e0e0e0;
+}
+
+/* Load level button group */
+.btn-group .btn-check:checked + .btn-outline-success {
+    box-shadow: 0 0 8px rgba(25, 135, 84, 0.4);
+}
+
+.btn-group .btn-check:checked + .btn-outline-warning {
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
+}
+
+.btn-group .btn-check:checked + .btn-outline-danger {
+    box-shadow: 0 0 8px rgba(220, 53, 69, 0.4);
 }
 
 /* Mode cards */

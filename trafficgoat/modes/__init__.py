@@ -4,6 +4,7 @@ from trafficgoat.modes.mixed import MixedMode
 from trafficgoat.modes.protocol import ProtocolMode
 from trafficgoat.modes.stealth import StealthMode
 from trafficgoat.modes.custom import CustomMode
+from trafficgoat.modes.auto import AutoMode
 
 MODES = {
     "stress": StressMode,
@@ -12,6 +13,7 @@ MODES = {
     "protocol": ProtocolMode,
     "stealth": StealthMode,
     "custom": CustomMode,
+    "auto": AutoMode,
 }
 
 __all__ = [
@@ -21,5 +23,6 @@ __all__ = [
     "ProtocolMode",
     "StealthMode",
     "CustomMode",
+    "AutoMode",
     "MODES",
 ]

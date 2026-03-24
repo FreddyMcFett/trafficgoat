@@ -53,6 +53,8 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  sudo trafficgoat auto -l heavy -d 300
+  sudo trafficgoat auto -l light -d 60
   sudo trafficgoat stress -t 192.168.1.1 -d 60 -r 500
   sudo trafficgoat scan -t 10.0.0.1 -p 1-1024
   sudo trafficgoat protocol -t 192.168.1.1 --protocol icmp -d 30
@@ -96,6 +98,20 @@ Examples:
     custom_parser = subparsers.add_parser("custom", parents=[common], help="Custom config from YAML")
     custom_parser.add_argument("-c", "--config", required=True, help="YAML configuration file")
 
+    # Auto mode (no target required)
+    auto_common = argparse.ArgumentParser(add_help=False)
+    auto_common.add_argument("-d", "--duration", type=int, default=120, help="Duration in seconds (default: 120)")
+    auto_common.add_argument("--dry-run", action="store_true", help="Show what would be generated without sending")
+    auto_common.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    auto_common.add_argument("-q", "--quiet", action="store_true", help="Minimal output")
+
+    auto_parser = subparsers.add_parser("auto", parents=[auto_common], help="Zero-config multi-destination traffic")
+    auto_parser.add_argument(
+        "-l", "--load", default="medium",
+        choices=["light", "medium", "heavy"],
+        help="Load level (default: medium)",
+    )
+
     # Web UI mode
     web_parser = subparsers.add_parser("web", help="Start the Web UI")
     web_parser.add_argument("--host", default="0.0.0.0", help="Bind address (default: 0.0.0.0)")
@@ -107,7 +123,19 @@ Examples:
 
 def run_cli(args):
     """Run traffic generation in CLI mode."""
-    config = TrafficConfig.from_args(args)
+    if args.mode == "auto":
+        # Auto mode uses its own config (no target required)
+        config = TrafficConfig(
+            target="0.0.0.0",
+            duration=getattr(args, "duration", 120),
+            dry_run=getattr(args, "dry_run", False),
+            mode="auto",
+            verbose=getattr(args, "verbose", False),
+            quiet=getattr(args, "quiet", False),
+        )
+        config.auto_load = getattr(args, "load", "medium")
+    else:
+        config = TrafficConfig.from_args(args)
     stats = StatsCollector()
 
     # Setup live stats printing
@@ -174,7 +202,7 @@ def main():
         sys.exit(0)
 
     # Check root for non-web modes (raw sockets need root)
-    if args.mode != "web" and os.geteuid() != 0:
+    if args.mode not in ("web",) and os.geteuid() != 0:
         print("[!] TrafficGoat requires root privileges for raw socket access.")
         print("[!] Run with: sudo trafficgoat ...")
         sys.exit(1)
