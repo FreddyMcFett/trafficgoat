@@ -1,0 +1,42 @@
+# TrafficGoat - Example Custom Configuration
+# Usage: sudo trafficgoat custom -t 192.168.1.1 -c configs/example.yaml
+
+target: "192.168.1.1"
+duration: 120
+
+generators:
+  # TCP SYN flood - 40% of traffic
+  - type: tcp_syn
+    subtype: syn
+    ports: "80,443,8080,8443"
+    rate: 200
+    weight: 0.4
+
+  # UDP traffic - 20%
+  - type: udp
+    subtype: random
+    ports: "53,123,161,500"
+    rate: 100
+    weight: 0.2
+
+  # ICMP ping - 10%
+  - type: icmp
+    subtype: echo
+    rate: 50
+    weight: 0.1
+
+  # HTTP requests - 20%
+  - type: http
+    ports: "80,443"
+    rate: 100
+    weight: 0.2
+    methods:
+      - GET
+      - POST
+      - PUT
+
+  # DNS queries - 10%
+  - type: dns
+    subtype: mixed
+    rate: 50
+    weight: 0.1

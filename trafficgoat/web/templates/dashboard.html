@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <!-- Quick Start Panel -->
+    <div class="col-lg-4">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-play-circle"></i> Quick Start</h5>
+            </div>
+            <div class="card-body">
+                <form id="quick-start-form">
+                    <div class="mb-3">
+                        <label for="target" class="form-label">Target IP</label>
+                        <input type="text" class="form-control bg-dark text-light border-secondary" id="target" value="127.0.0.1" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="ports" class="form-label">Ports</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" id="ports" value="80">
+                        </div>
+                        <div class="col-6">
+                            <label for="mode" class="form-label">Mode</label>
+                            <select class="form-select bg-dark text-light border-secondary" id="mode">
+                                <option value="stress">Stress</option>
+                                <option value="scan">Scan</option>
+                                <option value="mixed" selected>Mixed</option>
+                                <option value="protocol">Protocol</option>
+                                <option value="stealth">Stealth</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="duration" class="form-label">Duration (s)</label>
+                            <input type="number" class="form-control bg-dark text-light border-secondary" id="duration" value="60" min="1">
+                        </div>
+                        <div class="col-6">
+                            <label for="rate" class="form-label">Rate (pps)</label>
+                            <input type="number" class="form-control bg-dark text-light border-secondary" id="rate" value="100" min="1">
+                        </div>
+                    </div>
+                    <div class="mb-3" id="protocol-group" style="display:none;">
+                        <label for="protocol" class="form-label">Protocol</label>
+                        <select class="form-select bg-dark text-light border-secondary" id="protocol">
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                            <option value="icmp">ICMP</option>
+                            <option value="http">HTTP</option>
+                            <option value="dns">DNS</option>
+                            <option value="ftp">FTP</option>
+                            <option value="ssh">SSH</option>
+                            <option value="smtp">SMTP</option>
+                        </select>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="dry-run">
+                        <label class="form-check-label" for="dry-run">Dry Run (no actual packets)</label>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" id="btn-start">
+                            <i class="bi bi-play-fill"></i> Start
+                        </button>
+                        <button type="button" class="btn btn-danger btn-lg" id="btn-stop" disabled>
+                            <i class="bi bi-stop-fill"></i> Stop
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="col-lg-8">
+        <div class="row g-3 mb-3">
+            <div class="col-sm-6 col-md-3">
+                <div class="card bg-dark border-info text-center">
+                    <div class="card-body py-3">
+                        <div class="text-info small">PACKETS</div>
+                        <div class="fs-3 fw-bold" id="stat-packets">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card bg-dark border-success text-center">
+                    <div class="card-body py-3">
+                        <div class="text-success small">RATE</div>
+                        <div class="fs-3 fw-bold" id="stat-pps">0 <small class="fs-6">pps</small></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card bg-dark border-warning text-center">
+                    <div class="card-body py-3">
+                        <div class="text-warning small">DATA SENT</div>
+                        <div class="fs-3 fw-bold" id="stat-bytes">0 B</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card bg-dark border-danger text-center">
+                    <div class="card-body py-3">
+                        <div class="text-danger small">ERRORS</div>
+                        <div class="fs-3 fw-bold" id="stat-errors">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generator Stats Table -->
+        <div class="card bg-dark border-secondary">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Active Generators</h5>
+                <span class="badge bg-info" id="stat-elapsed">0.0s</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-dark table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Generator</th>
+                            <th class="text-end">Packets</th>
+                            <th class="text-end">Rate</th>
+                            <th class="text-end">Data</th>
+                            <th class="text-end">Errors</th>
+                        </tr>
+                    </thead>
+                    <tbody id="generator-table">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                No active generators. Configure and start a test above.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mini Log -->
+        <div class="card bg-dark border-secondary mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-terminal"></i> Recent Activity</h6>
+            </div>
+            <div class="card-body p-2">
+                <div id="mini-log" class="log-container small" style="height: 150px; overflow-y: auto; font-family: monospace;">
+                    <div class="text-muted">Waiting for activity...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
