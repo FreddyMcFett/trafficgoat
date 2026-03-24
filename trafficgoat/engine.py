@@ -91,10 +91,18 @@ class TrafficEngine:
             time.sleep(0.5)
 
     def _stats_loop(self):
-        """Periodically emit stats updates."""
+        """Periodically emit stats updates every second."""
         while self._running:
             self.stats.emit_stats()
-            time.sleep(1)
+            # Sleep in small increments so we stop promptly
+            for _ in range(10):
+                if not self._running:
+                    break
+                time.sleep(0.1)
+        # Emit a few final updates after stopping so the UI catches the final state
+        for _ in range(3):
+            self.stats.emit_stats()
+            time.sleep(0.3)
 
     def clear(self):
         """Remove all generators and reset."""

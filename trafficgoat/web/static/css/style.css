@@ -22,9 +22,23 @@ body {
     box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
 }
 
-/* Stats cards */
+/* Stats cards - smooth value transitions */
 .card .fs-3 {
     font-family: 'Courier New', monospace;
+    transition: color 0.3s ease;
+}
+
+.stat-value-changed {
+    color: #00d4ff !important;
+}
+
+/* Smooth table row transitions */
+#generator-table tr {
+    transition: background-color 0.3s ease;
+}
+
+#generator-table td {
+    transition: color 0.2s ease;
 }
 
 /* Log container */

@@ -38,7 +38,7 @@ class UDPGenerator(BaseGenerator):
             if self.duration > 0 and time.time() - start >= self.duration:
                 break
             port = random.choice(self.port_list)
-            payload = os.urandom(random.randint(64, 1024))
+            payload = os.urandom(random.randint(512, 1400))
             pkt = IP(dst=self.target) / UDP(
                 sport=int(RandShort()),
                 dport=port,
