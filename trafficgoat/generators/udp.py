@@ -7,7 +7,8 @@ import time
 from scapy.all import IP, UDP, DNS, DNSQR, NTP, send, RandShort
 
 from trafficgoat.generators.base import BaseGenerator
-from trafficgoat.config import GeneratorConfig, parse_ports, StatsCollector
+from trafficgoat.config import GeneratorConfig, parse_ports
+from trafficgoat.stats import StatsCollector
 
 
 class UDPGenerator(BaseGenerator):
