@@ -1,10 +1,14 @@
 """Web UI routes and API endpoints."""
 
 import os
-from flask import Blueprint, render_template, request, jsonify
+import time
+from flask import Blueprint, render_template, request, jsonify, redirect
 from flask_socketio import emit
 
-from trafficgoat.web.app import socketio, get_engine, get_stats, set_engine
+from trafficgoat.web.app import (
+    socketio, get_engine, get_stats, set_engine,
+    get_session_history, start_session, end_session, get_current_session,
+)
 from trafficgoat.config import TrafficConfig
 from trafficgoat.engine import TrafficEngine
 from trafficgoat.modes import MODES
@@ -17,10 +21,15 @@ def dashboard():
     return render_template("dashboard.html")
 
 
+@bp.route("/generate")
+def generate_page():
+    return render_template("generate.html")
+
+
 @bp.route("/modes")
 def modes_page():
-    modes_info = {name: cls.description for name, cls in MODES.items()}
-    return render_template("modes.html", modes=modes_info)
+    """Redirect old modes page to generate."""
+    return redirect("/generate")
 
 
 @bp.route("/logs")
@@ -58,8 +67,10 @@ def api_start():
     )
 
     # For auto mode, attach load level
+    load_level = None
     if mode_name == "auto":
-        config.auto_load = data.get("load", "medium")
+        load_level = data.get("load", "medium")
+        config.auto_load = load_level
 
     stats.reset()
     new_engine = TrafficEngine(config, stats)
@@ -70,6 +81,16 @@ def api_start():
         return jsonify({"error": f"Unknown mode: {config.mode}"}), 400
 
     mode_class.configure(config, new_engine, stats)
+
+    # Record session
+    start_session(
+        mode=config.mode,
+        target=config.target,
+        load_level=load_level,
+        dry_run=config.dry_run,
+        duration=config.duration,
+    )
+
     new_engine.start()
 
     return jsonify({"status": "started", "mode": config.mode, "target": config.target})
@@ -80,7 +101,10 @@ def api_stop():
     """Stop traffic generation."""
     engine = get_engine()
     if engine and engine.is_running():
+        # Capture final stats before stopping
+        stats_data = engine.get_status()
         engine.stop()
+        end_session(stats_data)
         return jsonify({"status": "stopped"})
     return jsonify({"status": "not_running"})
 
@@ -91,7 +115,11 @@ def api_status():
     engine = get_engine()
     stats = get_stats()
     if engine:
-        return jsonify(engine.get_status())
+        status = engine.get_status()
+        # If engine finished on its own, record the session
+        if not status.get("running") and get_current_session():
+            end_session(status)
+        return jsonify(status)
     return jsonify({
         "running": False,
         "elapsed": 0,
@@ -125,6 +153,14 @@ def api_logs():
     stats = get_stats()
     n = request.args.get("n", 100, type=int)
     return jsonify({"logs": stats.get_logs(n)})
+
+
+@bp.route("/api/history", methods=["GET"])
+def api_history():
+    """Get session history."""
+    history = get_session_history()
+    n = request.args.get("n", 20, type=int)
+    return jsonify({"sessions": history[:n]})
 
 
 # ---- Socket.IO Events ----

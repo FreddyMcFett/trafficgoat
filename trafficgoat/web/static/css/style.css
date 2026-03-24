@@ -1,147 +1,842 @@
-/* TrafficGoat Web UI Styles */
+/* ============================================================
+   TrafficGoat - FortiOS 7.6 Inspired Theme
+   ============================================================ */
+
+:root {
+    /* FortiOS Color Palette */
+    --forti-bg: #1b2130;
+    --forti-bg-card: #222838;
+    --forti-bg-sidebar: #171c28;
+    --forti-bg-header: #1e2433;
+    --forti-bg-input: #2a3040;
+    --forti-bg-hover: #2d3548;
+    --forti-bg-table-stripe: rgba(255, 255, 255, 0.02);
+    --forti-border: #2d3548;
+    --forti-border-light: #363e50;
+    --forti-text: #c8cdd5;
+    --forti-text-muted: #7a8494;
+    --forti-text-bright: #e8ecf1;
+    --forti-primary: #4b8bf5;
+    --forti-primary-hover: #3a7ae4;
+    --forti-success: #34c759;
+    --forti-success-muted: rgba(52, 199, 89, 0.15);
+    --forti-warning: #ffb830;
+    --forti-warning-muted: rgba(255, 184, 48, 0.15);
+    --forti-danger: #f5503b;
+    --forti-danger-muted: rgba(245, 80, 59, 0.15);
+    --forti-info: #3bbdf5;
+    --forti-info-muted: rgba(59, 189, 245, 0.15);
+    --forti-teal: #2ac7c7;
+    --forti-sidebar-width: 220px;
+    --forti-header-height: 48px;
+    --forti-radius: 6px;
+    --forti-radius-sm: 4px;
+    --forti-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --forti-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ---- Reset & Base ---- */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
 
 body {
-    background-color: #1a1a2e;
-    color: #e0e0e0;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    background-color: var(--forti-bg);
+    color: var(--forti-text);
+    overflow-x: hidden;
 }
 
-.navbar {
-    background-color: #16213e !important;
+/* ---- Header ---- */
+.forti-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--forti-header-height);
+    background: var(--forti-bg-header);
+    border-bottom: 1px solid var(--forti-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 1000;
 }
 
-.navbar-brand {
-    color: #00d4ff !important;
-    font-size: 1.4rem;
+.forti-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.card {
-    transition: box-shadow 0.15s ease-in-out;
+.forti-header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
-.card:hover {
-    box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: var(--forti-text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--forti-radius-sm);
+    display: flex;
+    align-items: center;
+}
+.sidebar-toggle:hover {
+    color: var(--forti-text-bright);
+    background: var(--forti-bg-hover);
 }
 
-/* Stats cards - smooth value transitions */
-.card .fs-3 {
-    font-family: 'Courier New', monospace;
-    transition: color 0.3s ease;
+.forti-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.stat-value-changed {
-    color: #00d4ff !important;
+.forti-brand-icon {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--forti-primary), var(--forti-teal));
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+    color: #fff;
+    letter-spacing: -0.5px;
 }
 
-/* Smooth table row transitions */
-#generator-table tr {
-    transition: background-color 0.3s ease;
+.forti-brand-text {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--forti-text-bright);
 }
 
-#generator-table td {
-    transition: color 0.2s ease;
+.forti-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--forti-text-muted);
+    font-size: 13px;
+}
+.forti-breadcrumb i {
+    font-size: 10px;
+}
+.forti-breadcrumb span {
+    color: var(--forti-text);
 }
 
-/* Log container */
-.log-container {
-    background: #0d1117;
-    border-radius: 4px;
+.forti-header-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--forti-bg-card);
+    border: 1px solid var(--forti-border);
 }
 
-.log-line {
-    line-height: 1.5;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.log-line:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-/* Generator table */
-.table-dark {
-    --bs-table-bg: transparent;
-}
-
-/* Status badge animation */
-.badge-pulse {
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-/* Button states */
-#btn-start:disabled,
-#btn-auto-start:disabled {
-    opacity: 0.5;
-}
-
-#btn-stop:disabled {
-    opacity: 0.5;
-}
-
-/* Tab styling for control panel */
-.nav-tabs .nav-link {
-    color: #8a8ab0;
-    border-color: transparent;
-}
-
-.nav-tabs .nav-link.active {
-    background-color: transparent;
-    border-bottom-color: transparent;
-    color: #00d4ff;
-}
-
-.nav-tabs .nav-link:hover:not(.active) {
-    border-color: transparent;
-    color: #e0e0e0;
-}
-
-/* Load level button group */
-.btn-group .btn-check:checked + .btn-outline-success {
-    box-shadow: 0 0 8px rgba(25, 135, 84, 0.4);
-}
-
-.btn-group .btn-check:checked + .btn-outline-warning {
-    box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
-}
-
-.btn-group .btn-check:checked + .btn-outline-danger {
-    box-shadow: 0 0 8px rgba(220, 53, 69, 0.4);
-}
-
-/* Mode cards */
-.card-footer {
-    background: rgba(0, 0, 0, 0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Code blocks */
-pre {
-    background: #0d1117;
-    padding: 1rem;
-    border-radius: 4px;
-}
-
-code {
-    color: #00d4ff;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
+.status-dot {
     width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--forti-text-muted);
+}
+.status-dot.idle {
+    background: var(--forti-text-muted);
+}
+.status-dot.running {
+    background: var(--forti-success);
+    box-shadow: 0 0 6px var(--forti-success);
+    animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.forti-header-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--forti-text-muted);
+}
+
+.forti-header-user {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--forti-text-muted);
+    padding-left: 16px;
+    border-left: 1px solid var(--forti-border);
+}
+
+/* ---- Sidebar ---- */
+.forti-sidebar {
+    position: fixed;
+    top: var(--forti-header-height);
+    left: 0;
+    bottom: 0;
+    width: var(--forti-sidebar-width);
+    background: var(--forti-bg-sidebar);
+    border-right: 1px solid var(--forti-border);
+    overflow-y: auto;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, width 0.2s ease;
+}
+
+.forti-sidebar.collapsed {
+    transform: translateX(-100%);
+}
+
+.sidebar-section-label {
+    padding: 16px 16px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--forti-text-muted);
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    color: var(--forti-text);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 400;
+    transition: all 0.15s ease;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+    background: var(--forti-bg-hover);
+    color: var(--forti-text-bright);
+}
+
+.sidebar-link.active {
+    background: rgba(75, 139, 245, 0.1);
+    color: var(--forti-primary);
+    border-left-color: var(--forti-primary);
+    font-weight: 500;
+}
+
+.sidebar-link i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 1px solid var(--forti-border);
+}
+
+.sidebar-version {
+    font-size: 11px;
+    color: var(--forti-text-muted);
+}
+
+/* ---- Main Content ---- */
+.forti-content {
+    margin-left: var(--forti-sidebar-width);
+    margin-top: var(--forti-header-height);
+    padding: 20px;
+    min-height: calc(100vh - var(--forti-header-height));
+    transition: margin-left 0.2s ease;
+}
+
+.forti-sidebar.collapsed + .forti-content,
+body.sidebar-collapsed .forti-content {
+    margin-left: 0;
+}
+
+/* ---- Widget Cards (top stats) ---- */
+.forti-widget {
+    background: var(--forti-bg-card);
+    border: 1px solid var(--forti-border);
+    border-radius: var(--forti-radius);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.2s ease;
+}
+.forti-widget:hover {
+    border-color: var(--forti-border-light);
+}
+
+.widget-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.bg-primary-subtle { background: rgba(75, 139, 245, 0.15); }
+.bg-success-subtle { background: var(--forti-success-muted); }
+.bg-info-subtle { background: var(--forti-info-muted); }
+.bg-danger-subtle { background: var(--forti-danger-muted); }
+.bg-warning-subtle { background: var(--forti-warning-muted); }
+
+.text-primary { color: var(--forti-primary) !important; }
+.text-success { color: var(--forti-success) !important; }
+.text-info { color: var(--forti-info) !important; }
+.text-danger { color: var(--forti-danger) !important; }
+.text-warning { color: var(--forti-warning) !important; }
+
+.widget-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--forti-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.widget-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--forti-text-bright);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.widget-value small {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--forti-text-muted);
+}
+
+/* ---- Card ---- */
+.forti-card {
+    background: var(--forti-bg-card);
+    border: 1px solid var(--forti-border);
+    border-radius: var(--forti-radius);
+    overflow: hidden;
+}
+
+.forti-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--forti-border);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.forti-card-header h6 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--forti-text-bright);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.forti-card-header h6 i {
+    font-size: 14px;
+    color: var(--forti-primary);
+}
+
+.forti-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.forti-card-body {
+    padding: 16px;
+}
+
+/* ---- Tables ---- */
+.forti-table-wrapper {
+    overflow-x: auto;
+}
+
+.forti-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+.forti-table thead th {
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--forti-text-muted);
+    background: rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid var(--forti-border);
+    white-space: nowrap;
+}
+
+.forti-table tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--forti-border);
+    color: var(--forti-text);
+    vertical-align: middle;
+}
+
+.forti-table tbody tr:hover {
+    background: var(--forti-bg-hover);
+}
+
+.forti-table tbody tr:nth-child(even) {
+    background: var(--forti-bg-table-stripe);
+}
+.forti-table tbody tr:nth-child(even):hover {
+    background: var(--forti-bg-hover);
+}
+
+/* ---- Badges ---- */
+.badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.forti-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.forti-badge-primary { background: rgba(75, 139, 245, 0.15); color: var(--forti-primary); }
+.forti-badge-success { background: var(--forti-success-muted); color: var(--forti-success); }
+.forti-badge-warning { background: var(--forti-warning-muted); color: var(--forti-warning); }
+.forti-badge-danger { background: var(--forti-danger-muted); color: var(--forti-danger); }
+.forti-badge-info { background: var(--forti-info-muted); color: var(--forti-info); }
+.forti-badge-secondary { background: rgba(122, 132, 148, 0.15); color: var(--forti-text-muted); }
+
+/* ---- Buttons ---- */
+.forti-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    border-radius: var(--forti-radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.forti-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.forti-btn-primary {
+    background: var(--forti-primary);
+    color: #fff;
+}
+.forti-btn-primary:hover:not(:disabled) {
+    background: var(--forti-primary-hover);
+}
+
+.forti-btn-success {
+    background: var(--forti-success);
+    color: #fff;
+}
+.forti-btn-success:hover:not(:disabled) {
+    background: #2db84e;
+}
+
+.forti-btn-danger {
+    background: var(--forti-danger);
+    color: #fff;
+}
+.forti-btn-danger:hover:not(:disabled) {
+    background: #e0432e;
+}
+
+.forti-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--forti-bg-input);
+    color: var(--forti-text);
+    border: 1px solid var(--forti-border);
+    border-radius: var(--forti-radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+.forti-btn-sm:hover {
+    background: var(--forti-bg-hover);
+    border-color: var(--forti-border-light);
+}
+
+.forti-btn-sm-danger {
+    color: var(--forti-danger);
+}
+.forti-btn-sm-danger:hover {
+    background: var(--forti-danger-muted);
+}
+
+.forti-btn-sm-muted {
+    color: var(--forti-text-muted);
+}
+
+.forti-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* ---- Forms ---- */
+.forti-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--forti-text-muted);
+    margin-bottom: 6px;
+}
+
+.forti-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--forti-bg-input);
+    color: var(--forti-text-bright);
+    border: 1px solid var(--forti-border);
+    border-radius: var(--forti-radius-sm);
+    transition: border-color 0.15s ease;
+    outline: none;
+}
+.forti-input:focus {
+    border-color: var(--forti-primary);
+    box-shadow: 0 0 0 2px rgba(75, 139, 245, 0.15);
+}
+
+.forti-select {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--forti-bg-input);
+    color: var(--forti-text-bright);
+    border: 1px solid var(--forti-border);
+    border-radius: var(--forti-radius-sm);
+    transition: border-color 0.15s ease;
+    outline: none;
+    cursor: pointer;
+    appearance: auto;
+}
+.forti-select:focus {
+    border-color: var(--forti-primary);
+    box-shadow: 0 0 0 2px rgba(75, 139, 245, 0.15);
+}
+
+.forti-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--forti-text);
+    user-select: none;
+}
+
+.forti-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.forti-checkbox-mark {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--forti-border-light);
+    border-radius: 3px;
+    background: var(--forti-bg-input);
+    position: relative;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.forti-checkbox input:checked + .forti-checkbox-mark {
+    background: var(--forti-primary);
+    border-color: var(--forti-primary);
+}
+
+.forti-checkbox input:checked + .forti-checkbox-mark::after {
+    content: '';
+    position: absolute;
+    left: 4.5px;
+    top: 1.5px;
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Radio card group */
+.forti-radio-group {
+    display: flex;
+    gap: 8px;
+}
+
+.forti-radio-option {
+    flex: 1;
+    cursor: pointer;
+}
+
+.forti-radio-option input[type="radio"] {
+    display: none;
+}
+
+.forti-radio-card {
+    padding: 12px;
+    border: 1px solid var(--forti-border);
+    border-radius: var(--forti-radius);
+    background: var(--forti-bg-input);
+    text-align: center;
+    transition: all 0.15s ease;
+}
+
+.forti-radio-option:hover .forti-radio-card {
+    border-color: var(--forti-border-light);
+    background: var(--forti-bg-hover);
+}
+
+.forti-radio-option input:checked + .forti-radio-card {
+    border-color: var(--forti-primary);
+    background: rgba(75, 139, 245, 0.08);
+    box-shadow: 0 0 0 1px var(--forti-primary);
+}
+
+.forti-radio-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--forti-text-bright);
+    margin-bottom: 4px;
+}
+
+.forti-radio-desc {
+    font-size: 11px;
+    color: var(--forti-text-muted);
+}
+
+/* ---- Log Containers ---- */
+.forti-log-mini {
+    height: 300px;
+    overflow-y: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 11.5px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.forti-log-full {
+    height: calc(100vh - 140px);
+    overflow-y: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.forti-log-line {
+    padding: 3px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.forti-log-line:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.forti-log-line.log-error {
+    color: var(--forti-danger);
+    background: var(--forti-danger-muted);
+}
+
+.forti-log-line.log-success {
+    color: var(--forti-success);
+}
+
+.forti-log-line.log-warning {
+    color: var(--forti-warning);
+}
+
+/* ---- Code Block ---- */
+.forti-code {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--forti-border);
+    border-radius: var(--forti-radius-sm);
+    padding: 16px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: var(--forti-text);
+    margin: 0;
+    overflow-x: auto;
+}
+
+.forti-code code {
+    color: var(--forti-text);
+}
+
+/* ---- Charts ---- */
+.chart-container {
+    position: relative;
+}
+
+.chart-center-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.chart-center-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--forti-text-bright);
+    line-height: 1;
+}
+
+.chart-center-text {
+    font-size: 11px;
+    color: var(--forti-text-muted);
+    margin-top: 2px;
+}
+
+/* ---- Generator status indicators ---- */
+.gen-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+}
+
+.gen-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.gen-status-active .gen-status-dot {
+    background: var(--forti-success);
+    box-shadow: 0 0 4px var(--forti-success);
+}
+
+.gen-status-idle .gen-status-dot {
+    background: var(--forti-text-muted);
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #1a1a2e;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #4a4a6a;
-    border-radius: 4px;
+    background: var(--forti-border);
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #6a6a8a;
+    background: var(--forti-border-light);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 992px) {
+    .forti-sidebar {
+        transform: translateX(-100%);
+    }
+    .forti-sidebar.show {
+        transform: translateX(0);
+    }
+    .forti-content {
+        margin-left: 0;
+    }
+    .forti-breadcrumb {
+        display: none;
+    }
+    .forti-header-info,
+    .forti-header-user {
+        display: none;
+    }
+    .forti-radio-group {
+        flex-direction: column;
+    }
+}
+
+/* ---- Session History Badges ---- */
+.session-status-completed {
+    color: var(--forti-success);
+}
+.session-status-running {
+    color: var(--forti-primary);
+}
+.session-mode {
+    text-transform: capitalize;
+}
+
+/* ---- Utility ---- */
+.text-muted {
+    color: var(--forti-text-muted) !important;
+}
+
+.bg-secondary {
+    background-color: rgba(122, 132, 148, 0.2) !important;
+}
+.bg-primary {
+    background-color: var(--forti-primary) !important;
+}
+
+.h-100 {
+    height: 100%;
+}
+
+/* Override bootstrap badge in header */
+.badge.bg-secondary {
+    background: var(--forti-bg-input) !important;
+    color: var(--forti-text-muted);
+    font-weight: 500;
+}
+
+#generator-count-badge {
+    background: var(--forti-bg-input);
+    color: var(--forti-text-muted);
+    border: 1px solid var(--forti-border);
 }

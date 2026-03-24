@@ -1,23 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Logs{% endblock %}
+{% block title %}Log Viewer{% endblock %}
+{% block header_title %}Log Viewer{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0"><i class="bi bi-terminal"></i> Live Logs</h3>
-    <div>
-        <button class="btn btn-outline-secondary btn-sm" id="btn-clear-logs">
-            <i class="bi bi-trash"></i> Clear
-        </button>
-        <button class="btn btn-outline-info btn-sm" id="btn-autoscroll" data-active="true">
-            <i class="bi bi-arrow-down-circle"></i> Auto-scroll: ON
-        </button>
+<div class="forti-card">
+    <div class="forti-card-header">
+        <h6><i class="bi bi-journal-text"></i> Live Log Stream</h6>
+        <div class="forti-card-actions">
+            <button class="forti-btn-sm" id="btn-autoscroll" data-active="true">
+                <i class="bi bi-arrow-down-circle-fill"></i> Auto-scroll: ON
+            </button>
+            <button class="forti-btn-sm forti-btn-sm-danger" id="btn-clear-logs">
+                <i class="bi bi-trash3"></i> Clear
+            </button>
+        </div>
     </div>
-</div>
-
-<div class="card bg-dark border-secondary">
-    <div class="card-body p-2">
-        <div id="full-log" class="log-container" style="height: calc(100vh - 200px); overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.85rem;">
-            <div class="text-muted p-3">Waiting for log messages...</div>
+    <div class="forti-card-body p-0">
+        <div id="full-log" class="forti-log-full">
+            <div class="text-muted p-4 text-center">
+                <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                <div class="mt-2">Waiting for log messages...</div>
+            </div>
         </div>
     </div>
 </div>
@@ -26,67 +29,66 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const logEl = document.getElementById('full-log');
-    const clearBtn = document.getElementById('btn-clear-logs');
-    const scrollBtn = document.getElementById('btn-autoscroll');
-    let autoScroll = true;
+    var logEl = document.getElementById('full-log');
+    var clearBtn = document.getElementById('btn-clear-logs');
+    var scrollBtn = document.getElementById('btn-autoscroll');
+    var autoScroll = true;
 
     clearBtn.addEventListener('click', function() {
-        logEl.innerHTML = '<div class="text-muted p-3">Logs cleared.</div>';
+        logEl.innerHTML = '<div class="text-muted p-4 text-center"><i class="bi bi-check-circle" style="font-size: 2rem;"></i><div class="mt-2">Logs cleared.</div></div>';
     });
 
     scrollBtn.addEventListener('click', function() {
         autoScroll = !autoScroll;
         scrollBtn.innerHTML = autoScroll
-            ? '<i class="bi bi-arrow-down-circle"></i> Auto-scroll: ON'
+            ? '<i class="bi bi-arrow-down-circle-fill"></i> Auto-scroll: ON'
             : '<i class="bi bi-arrow-down-circle"></i> Auto-scroll: OFF';
-        scrollBtn.className = autoScroll
-            ? 'btn btn-outline-info btn-sm'
-            : 'btn btn-outline-secondary btn-sm';
+        scrollBtn.className = autoScroll ? 'forti-btn-sm' : 'forti-btn-sm forti-btn-sm-muted';
     });
 
-    // Override the global log handler for this page
     if (window.trafficGoat && window.trafficGoat.socket) {
         window.trafficGoat.socket.on('log_message', function(data) {
             if (logEl.querySelector('.text-muted')) {
                 logEl.innerHTML = '';
             }
-            const line = document.createElement('div');
-            line.className = 'log-line px-2 py-0';
+            var line = document.createElement('div');
+            line.className = 'forti-log-line';
             line.textContent = data.message;
 
-            // Color coding
             if (data.message.includes('Error') || data.message.includes('error')) {
-                line.classList.add('text-danger');
+                line.classList.add('log-error');
             } else if (data.message.includes('Starting') || data.message.includes('started')) {
-                line.classList.add('text-success');
+                line.classList.add('log-success');
             } else if (data.message.includes('Stopped') || data.message.includes('stopping')) {
-                line.classList.add('text-warning');
+                line.classList.add('log-warning');
             }
 
             logEl.appendChild(line);
-
-            // Keep max 500 lines
             while (logEl.children.length > 500) {
                 logEl.removeChild(logEl.firstChild);
             }
-
             if (autoScroll) {
                 logEl.scrollTop = logEl.scrollHeight;
             }
         });
     }
 
-    // Load existing logs
     fetch('/api/logs?n=200')
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             if (data.logs && data.logs.length > 0) {
                 logEl.innerHTML = '';
                 data.logs.forEach(function(msg) {
-                    const line = document.createElement('div');
-                    line.className = 'log-line px-2 py-0';
+                    var line = document.createElement('div');
+                    line.className = 'forti-log-line';
                     line.textContent = msg;
+                    if (msg.includes('Error') || msg.includes('error')) {
+                        line.classList.add('log-error');
+                    } else if (msg.includes('Starting') || msg.includes('started')) {
+                        line.classList.add('log-success');
+                    } else if (msg.includes('Stopped') || msg.includes('stopping')) {
+                        line.classList.add('log-warning');
+                    }
                     logEl.appendChild(line);
                 });
                 if (autoScroll) logEl.scrollTop = logEl.scrollHeight;
