@@ -87,6 +87,12 @@ def create_app() -> Flask:
     )
     app.config["SECRET_KEY"] = "trafficgoat-secret"
 
+    from trafficgoat import __version__
+
+    @app.context_processor
+    def inject_version():
+        return {"app_version": __version__}
+
     from trafficgoat.web.routes import bp
     app.register_blueprint(bp)
 

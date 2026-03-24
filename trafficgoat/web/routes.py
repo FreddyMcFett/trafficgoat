@@ -163,6 +163,13 @@ def api_history():
     return jsonify({"sessions": history[:n]})
 
 
+@bp.route("/api/version", methods=["GET"])
+def api_version():
+    """Get application version info."""
+    from trafficgoat import __version__
+    return jsonify({"version": __version__})
+
+
 # ---- Socket.IO Events ----
 
 @socketio.on("connect")

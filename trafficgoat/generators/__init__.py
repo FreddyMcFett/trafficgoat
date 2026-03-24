@@ -5,7 +5,10 @@ from trafficgoat.generators.http import HTTPGenerator
 from trafficgoat.generators.dns import DNSGenerator
 from trafficgoat.generators.application import ApplicationGenerator
 from trafficgoat.generators.malicious import MaliciousGenerator
-from trafficgoat.generators.auto import AutoRawGenerator, AutoHTTPGenerator, AutoTCPConnectGenerator, AutoBulkGenerator
+from trafficgoat.generators.auto import (
+    AutoRawGenerator, AutoHTTPGenerator, AutoTCPConnectGenerator,
+    AutoBulkGenerator, AutoCurlGenerator, AutoSaaSGenerator,
+)
 
 GENERATORS = {
     "tcp": TCPGenerator,
@@ -26,6 +29,8 @@ GENERATORS = {
     "auto_http": AutoHTTPGenerator,
     "auto_tcp": AutoTCPConnectGenerator,
     "auto_bulk": AutoBulkGenerator,
+    "auto_curl": AutoCurlGenerator,
+    "auto_saas": AutoSaaSGenerator,
 }
 
 __all__ = [
@@ -40,5 +45,7 @@ __all__ = [
     "AutoHTTPGenerator",
     "AutoTCPConnectGenerator",
     "AutoBulkGenerator",
+    "AutoCurlGenerator",
+    "AutoSaaSGenerator",
     "GENERATORS",
 ]

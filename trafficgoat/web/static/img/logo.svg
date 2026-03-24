@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4b8bf5;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#2ac7c7;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="horn-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffb830;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#f5503b;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="signal-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#34c759;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#2ac7c7;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bg-grad)" opacity="0.12"/>
+  <circle cx="256" cy="256" r="240" fill="none" stroke="url(#bg-grad)" stroke-width="4" opacity="0.4"/>
+
+  <!-- Network grid lines (background) -->
+  <g opacity="0.1" stroke="#4b8bf5" stroke-width="1.5">
+    <line x1="80" y1="400" x2="432" y2="400"/>
+    <line x1="80" y1="360" x2="432" y2="360"/>
+    <line x1="120" y1="320" x2="392" y2="320"/>
+    <line x1="160" y1="440" x2="160" y2="320"/>
+    <line x1="256" y1="440" x2="256" y2="320"/>
+    <line x1="352" y1="440" x2="352" y2="320"/>
+  </g>
+
+  <!-- Left horn -->
+  <path d="M155 175 C140 120, 110 80, 95 55 C90 47, 100 40, 108 48 C135 78, 160 120, 175 170"
+        fill="url(#horn-grad)" stroke="#e8960a" stroke-width="2"/>
+  <!-- Right horn -->
+  <path d="M357 175 C372 120, 402 80, 417 55 C422 47, 412 40, 404 48 C377 78, 352 120, 337 170"
+        fill="url(#horn-grad)" stroke="#e8960a" stroke-width="2"/>
+
+  <!-- Goat head shape -->
+  <path d="M256 380
+           C200 380, 150 350, 140 300
+           C132 260, 140 220, 160 190
+           C175 165, 200 150, 230 145
+           C240 143, 250 142, 256 142
+           C262 142, 272 143, 282 145
+           C312 150, 337 165, 352 190
+           C372 220, 380 260, 372 300
+           C362 350, 312 380, 256 380Z"
+        fill="#e8ecf1" stroke="#c8cdd5" stroke-width="3"/>
+
+  <!-- Face inner shadow/shape -->
+  <path d="M256 370
+           C208 370, 165 345, 155 300
+           C148 265, 155 228, 172 200
+           C185 180, 210 165, 240 160
+           C248 158, 256 157, 256 157
+           C256 157, 264 158, 272 160
+           C302 165, 327 180, 340 200
+           C357 228, 364 265, 357 300
+           C347 345, 304 370, 256 370Z"
+        fill="#f0f2f5" opacity="0.5"/>
+
+  <!-- Left ear -->
+  <path d="M148 210 C120 190, 100 175, 90 195 C80 215, 110 230, 140 225Z"
+        fill="#e0d5d0" stroke="#c8b8b0" stroke-width="2"/>
+  <!-- Right ear -->
+  <path d="M364 210 C392 190, 412 175, 422 195 C432 215, 402 230, 372 225Z"
+        fill="#e0d5d0" stroke="#c8b8b0" stroke-width="2"/>
+
+  <!-- Left eye -->
+  <ellipse cx="210" cy="240" rx="22" ry="24" fill="#222838"/>
+  <ellipse cx="215" cy="235" rx="8" ry="9" fill="#4b8bf5"/>
+  <ellipse cx="217" cy="233" rx="3" ry="3.5" fill="#fff"/>
+
+  <!-- Right eye -->
+  <ellipse cx="302" cy="240" rx="22" ry="24" fill="#222838"/>
+  <ellipse cx="307" cy="235" rx="8" ry="9" fill="#4b8bf5"/>
+  <ellipse cx="309" cy="233" rx="3" ry="3.5" fill="#fff"/>
+
+  <!-- Nose -->
+  <ellipse cx="256" cy="310" rx="35" ry="25" fill="#d4b8a8" stroke="#c0a090" stroke-width="2"/>
+  <ellipse cx="243" cy="308" rx="6" ry="8" fill="#a08878"/>
+  <ellipse cx="269" cy="308" rx="6" ry="8" fill="#a08878"/>
+
+  <!-- Mouth -->
+  <path d="M240 330 Q256 342, 272 330" fill="none" stroke="#a08878" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Goatee (beard) -->
+  <path d="M240 345 C235 365, 245 395, 256 410 C267 395, 277 365, 272 345"
+        fill="#d0ccc8" stroke="#b8b4b0" stroke-width="1.5"/>
+  <path d="M248 350 C246 370, 252 392, 256 400 C260 392, 266 370, 264 350"
+        fill="#c8c4c0" opacity="0.6"/>
+
+  <!-- Signal waves (right side - representing traffic) -->
+  <g fill="none" stroke="url(#signal-grad)" stroke-width="3.5" stroke-linecap="round">
+    <path d="M390 200 C400 190, 400 170, 390 160" opacity="0.5"/>
+    <path d="M405 210 C420 195, 420 155, 405 140" opacity="0.65"/>
+    <path d="M420 220 C442 200, 442 140, 420 120" opacity="0.8"/>
+  </g>
+
+  <!-- Data packets (small rectangles flying) -->
+  <g opacity="0.8">
+    <rect x="415" y="152" width="14" height="8" rx="2" fill="#34c759" transform="rotate(-25, 422, 156)"/>
+    <rect x="430" y="178" width="10" height="6" rx="1.5" fill="#4b8bf5" transform="rotate(-15, 435, 181)"/>
+    <rect x="438" y="135" width="12" height="7" rx="2" fill="#f5503b" transform="rotate(-30, 444, 138)"/>
+  </g>
+
+  <!-- Small network nodes -->
+  <g fill="#4b8bf5" opacity="0.6">
+    <circle cx="445" cy="155" r="3"/>
+    <circle cx="452" cy="182" r="2.5"/>
+    <circle cx="460" cy="135" r="2"/>
+  </g>
+</svg>
