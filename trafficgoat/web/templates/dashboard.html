@@ -3,70 +3,136 @@
 
 {% block content %}
 <div class="row g-3 mb-4">
-    <!-- Quick Start Panel -->
+    <!-- Control Panel -->
     <div class="col-lg-4">
         <div class="card bg-dark border-secondary h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-play-circle"></i> Quick Start</h5>
+            <div class="card-header p-0">
+                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="auto-tab" data-bs-toggle="tab" data-bs-target="#auto-panel" type="button" role="tab">
+                            <i class="bi bi-lightning-charge-fill text-info"></i> Auto
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="targeted-tab" data-bs-toggle="tab" data-bs-target="#targeted-panel" type="button" role="tab">
+                            <i class="bi bi-crosshair"></i> Targeted
+                        </button>
+                    </li>
+                </ul>
             </div>
             <div class="card-body">
-                <form id="quick-start-form">
-                    <div class="mb-3">
-                        <label for="target" class="form-label">Target IP</label>
-                        <input type="text" class="form-control bg-dark text-light border-secondary" id="target" value="127.0.0.1" required>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label for="ports" class="form-label">Ports</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary" id="ports" value="80">
+                <div class="tab-content">
+                    <!-- Auto Traffic Panel -->
+                    <div class="tab-pane fade show active" id="auto-panel" role="tabpanel">
+                        <p class="text-muted small mb-3">Generate varied traffic to 1000s of destinations across many protocols. No configuration needed.</p>
+
+                        <div class="mb-3">
+                            <label class="form-label">Load Level</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="load-level" id="load-light" value="light">
+                                <label class="btn btn-outline-success" for="load-light">
+                                    <i class="bi bi-speedometer"></i> Light
+                                </label>
+                                <input type="radio" class="btn-check" name="load-level" id="load-medium" value="medium" checked>
+                                <label class="btn btn-outline-warning" for="load-medium">
+                                    <i class="bi bi-speedometer2"></i> Medium
+                                </label>
+                                <input type="radio" class="btn-check" name="load-level" id="load-heavy" value="heavy">
+                                <label class="btn btn-outline-danger" for="load-heavy">
+                                    <i class="bi bi-lightning-charge-fill"></i> Heavy
+                                </label>
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label for="mode" class="form-label">Mode</label>
-                            <select class="form-select bg-dark text-light border-secondary" id="mode">
-                                <option value="stress">Stress</option>
-                                <option value="scan">Scan</option>
-                                <option value="mixed" selected>Mixed</option>
-                                <option value="protocol">Protocol</option>
-                                <option value="stealth">Stealth</option>
-                            </select>
+
+                        <div class="mb-2">
+                            <small class="text-muted" id="load-description">~2000 pps to 1500 destinations</small>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="auto-duration" class="form-label">Duration (s)</label>
+                                <input type="number" class="form-control bg-dark text-light border-secondary" id="auto-duration" value="120" min="10">
+                            </div>
+                            <div class="col-6 d-flex align-items-end pb-1">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="auto-dry-run">
+                                    <label class="form-check-label" for="auto-dry-run">Dry Run</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-info btn-lg" id="btn-auto-start">
+                                <i class="bi bi-play-fill"></i> Start Auto Traffic
+                            </button>
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label for="duration" class="form-label">Duration (s)</label>
-                            <input type="number" class="form-control bg-dark text-light border-secondary" id="duration" value="60" min="1">
-                        </div>
-                        <div class="col-6">
-                            <label for="rate" class="form-label">Rate (pps)</label>
-                            <input type="number" class="form-control bg-dark text-light border-secondary" id="rate" value="100" min="1">
-                        </div>
+
+                    <!-- Targeted Traffic Panel -->
+                    <div class="tab-pane fade" id="targeted-panel" role="tabpanel">
+                        <form id="quick-start-form">
+                            <div class="mb-3">
+                                <label for="target" class="form-label">Target IP</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary" id="target" value="127.0.0.1" required>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label for="ports" class="form-label">Ports</label>
+                                    <input type="text" class="form-control bg-dark text-light border-secondary" id="ports" value="80">
+                                </div>
+                                <div class="col-6">
+                                    <label for="mode" class="form-label">Mode</label>
+                                    <select class="form-select bg-dark text-light border-secondary" id="mode">
+                                        <option value="stress">Stress</option>
+                                        <option value="scan">Scan</option>
+                                        <option value="mixed" selected>Mixed</option>
+                                        <option value="protocol">Protocol</option>
+                                        <option value="stealth">Stealth</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label for="duration" class="form-label">Duration (s)</label>
+                                    <input type="number" class="form-control bg-dark text-light border-secondary" id="duration" value="60" min="1">
+                                </div>
+                                <div class="col-6">
+                                    <label for="rate" class="form-label">Rate (pps)</label>
+                                    <input type="number" class="form-control bg-dark text-light border-secondary" id="rate" value="100" min="1">
+                                </div>
+                            </div>
+                            <div class="mb-3" id="protocol-group" style="display:none;">
+                                <label for="protocol" class="form-label">Protocol</label>
+                                <select class="form-select bg-dark text-light border-secondary" id="protocol">
+                                    <option value="tcp">TCP</option>
+                                    <option value="udp">UDP</option>
+                                    <option value="icmp">ICMP</option>
+                                    <option value="http">HTTP</option>
+                                    <option value="dns">DNS</option>
+                                    <option value="ftp">FTP</option>
+                                    <option value="ssh">SSH</option>
+                                    <option value="smtp">SMTP</option>
+                                </select>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="dry-run">
+                                <label class="form-check-label" for="dry-run">Dry Run (no actual packets)</label>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg" id="btn-start">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="mb-3" id="protocol-group" style="display:none;">
-                        <label for="protocol" class="form-label">Protocol</label>
-                        <select class="form-select bg-dark text-light border-secondary" id="protocol">
-                            <option value="tcp">TCP</option>
-                            <option value="udp">UDP</option>
-                            <option value="icmp">ICMP</option>
-                            <option value="http">HTTP</option>
-                            <option value="dns">DNS</option>
-                            <option value="ftp">FTP</option>
-                            <option value="ssh">SSH</option>
-                            <option value="smtp">SMTP</option>
-                        </select>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="dry-run">
-                        <label class="form-check-label" for="dry-run">Dry Run (no actual packets)</label>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success btn-lg" id="btn-start">
-                            <i class="bi bi-play-fill"></i> Start
-                        </button>
-                        <button type="button" class="btn btn-danger btn-lg" id="btn-stop" disabled>
-                            <i class="bi bi-stop-fill"></i> Stop
-                        </button>
-                    </div>
-                </form>
+                </div>
+
+                <!-- Shared stop button -->
+                <div class="d-grid mt-3">
+                    <button type="button" class="btn btn-danger btn-lg" id="btn-stop" disabled>
+                        <i class="bi bi-stop-fill"></i> Stop
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -128,7 +194,7 @@
                     <tbody id="generator-table">
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4">
-                                No active generators. Configure and start a test above.
+                                No active generators. Choose a mode and start above.
                             </td>
                         </tr>
                     </tbody>

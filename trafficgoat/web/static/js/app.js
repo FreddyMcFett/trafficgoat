@@ -4,7 +4,7 @@
     'use strict';
 
     // Socket.IO connection
-    const socket = io();
+    var socket = io();
 
     // Export for other pages
     window.trafficGoat = { socket: socket };
@@ -13,8 +13,8 @@
 
     function formatBytes(bytes) {
         if (bytes === 0) return '0 B';
-        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        var units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        var i = Math.floor(Math.log(bytes) / Math.log(1024));
         return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
     }
 
@@ -25,7 +25,7 @@
     // ---- Status Badge ----
 
     function updateStatusBadge(running) {
-        const badge = document.getElementById('engine-status');
+        var badge = document.getElementById('engine-status');
         if (!badge) return;
         if (running) {
             badge.textContent = 'Running';
@@ -41,11 +41,11 @@
     function updateStats(data) {
         updateStatusBadge(data.running);
 
-        const packets = document.getElementById('stat-packets');
-        const pps = document.getElementById('stat-pps');
-        const bytes = document.getElementById('stat-bytes');
-        const errors = document.getElementById('stat-errors');
-        const elapsed = document.getElementById('stat-elapsed');
+        var packets = document.getElementById('stat-packets');
+        var pps = document.getElementById('stat-pps');
+        var bytes = document.getElementById('stat-bytes');
+        var errors = document.getElementById('stat-errors');
+        var elapsed = document.getElementById('stat-elapsed');
 
         if (packets) packets.textContent = formatNumber(data.total_packets);
         if (pps) pps.innerHTML = formatNumber(Math.round(data.total_pps)) + ' <small class="fs-6">pps</small>';
@@ -61,18 +61,18 @@
     }
 
     function updateGeneratorTable(generators) {
-        const tbody = document.getElementById('generator-table');
+        var tbody = document.getElementById('generator-table');
         if (!tbody) return;
 
-        const entries = Object.entries(generators);
+        var entries = Object.entries(generators);
         if (entries.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No active generators. Configure and start a test above.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No active generators. Choose a mode and start above.</td></tr>';
             return;
         }
 
         tbody.innerHTML = entries.map(function(entry) {
-            const name = entry[0];
-            const s = entry[1];
+            var name = entry[0];
+            var s = entry[1];
             return '<tr>' +
                 '<td><i class="bi bi-broadcast text-success"></i> ' + name + '</td>' +
                 '<td class="text-end">' + formatNumber(s.packets_sent) + '</td>' +
@@ -84,9 +84,11 @@
     }
 
     function updateButtons(running) {
-        const startBtn = document.getElementById('btn-start');
-        const stopBtn = document.getElementById('btn-stop');
+        var startBtn = document.getElementById('btn-start');
+        var stopBtn = document.getElementById('btn-stop');
+        var autoStartBtn = document.getElementById('btn-auto-start');
         if (startBtn) startBtn.disabled = running;
+        if (autoStartBtn) autoStartBtn.disabled = running;
         if (stopBtn) stopBtn.disabled = !running;
     }
 
@@ -95,14 +97,14 @@
     socket.on('stats_update', updateStats);
 
     socket.on('log_message', function(data) {
-        const miniLog = document.getElementById('mini-log');
+        var miniLog = document.getElementById('mini-log');
         if (!miniLog) return;
 
         if (miniLog.querySelector('.text-muted:first-child')) {
             miniLog.innerHTML = '';
         }
 
-        const line = document.createElement('div');
+        var line = document.createElement('div');
         line.className = 'log-line px-1';
         line.textContent = data.message;
 
@@ -129,19 +131,74 @@
         updateStatusBadge(false);
     });
 
-    // ---- Quick Start Form ----
+    // ---- Load Level Descriptions ----
+
+    var loadDescriptions = {
+        light:  '~200 pps to 500 destinations',
+        medium: '~2000 pps to 1500 destinations',
+        heavy:  '~10000 pps to 3000 destinations'
+    };
+
+    // ---- DOMContentLoaded ----
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Mode selector - show/hide protocol dropdown
-        const modeSelect = document.getElementById('mode');
-        const protoGroup = document.getElementById('protocol-group');
+
+        // --- Auto mode: load level description ---
+        var loadRadios = document.querySelectorAll('input[name="load-level"]');
+        var loadDesc = document.getElementById('load-description');
+        if (loadRadios.length && loadDesc) {
+            loadRadios.forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    loadDesc.textContent = loadDescriptions[this.value] || '';
+                });
+            });
+        }
+
+        // --- Auto mode: start button ---
+        var autoStartBtn = document.getElementById('btn-auto-start');
+        if (autoStartBtn) {
+            autoStartBtn.addEventListener('click', function() {
+                var loadLevel = 'medium';
+                var checked = document.querySelector('input[name="load-level"]:checked');
+                if (checked) loadLevel = checked.value;
+
+                var duration = parseInt(document.getElementById('auto-duration').value) || 120;
+                var dryRun = document.getElementById('auto-dry-run').checked;
+
+                var payload = {
+                    mode: 'auto',
+                    load: loadLevel,
+                    duration: duration,
+                    dry_run: dryRun
+                };
+
+                fetch('/api/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(function(err) {
+                    alert('Request failed: ' + err.message);
+                });
+            });
+        }
+
+        // --- Targeted mode: mode selector ---
+        var modeSelect = document.getElementById('mode');
+        var protoGroup = document.getElementById('protocol-group');
         if (modeSelect && protoGroup) {
             modeSelect.addEventListener('change', function() {
                 protoGroup.style.display = this.value === 'protocol' ? 'block' : 'none';
             });
 
             // Restore mode from localStorage (from modes page)
-            const savedMode = localStorage.getItem('mode');
+            var savedMode = localStorage.getItem('mode');
             if (savedMode) {
                 modeSelect.value = savedMode;
                 localStorage.removeItem('mode');
@@ -151,12 +208,12 @@
             }
         }
 
-        // Start button
-        const startForm = document.getElementById('quick-start-form');
+        // --- Targeted mode: start button ---
+        var startForm = document.getElementById('quick-start-form');
         if (startForm) {
             startForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                const payload = {
+                var payload = {
                     target: document.getElementById('target').value,
                     ports: document.getElementById('ports').value,
                     mode: document.getElementById('mode').value,
@@ -185,19 +242,20 @@
             });
         }
 
-        // Stop button
-        const stopBtn = document.getElementById('btn-stop');
+        // --- Shared stop button ---
+        var stopBtn = document.getElementById('btn-stop');
         if (stopBtn) {
             stopBtn.addEventListener('click', function() {
                 fetch('/api/stop', { method: 'POST' })
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
-                        console.log('Stopped:', data);
+                        updateButtons(false);
+                        updateStatusBadge(false);
                     });
             });
         }
 
-        // Initial status fetch
+        // --- Initial status fetch ---
         fetch('/api/status')
             .then(function(r) { return r.json(); })
             .then(updateStats)

@@ -5,6 +5,42 @@
 <h3 class="mb-4"><i class="bi bi-gear"></i> Traffic Modes</h3>
 
 <div class="row g-4">
+    <div class="col-12 mb-2">
+        <div class="card bg-dark border-info">
+            <div class="card-body">
+                <h5 class="card-title text-info"><i class="bi bi-lightning-charge-fill"></i> Auto Traffic</h5>
+                <p class="card-text">Zero-configuration traffic generation to 1000s of real destinations. Uses TCP, UDP, ICMP, DNS, NTP, and HTTP with huge variation. Just pick a load level and go.</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <ul class="list-unstyled small text-muted">
+                            <li><i class="bi bi-check2"></i> TCP SYN + full connect</li>
+                            <li><i class="bi bi-check2"></i> UDP (many ports)</li>
+                            <li><i class="bi bi-check2"></i> ICMP echo</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <ul class="list-unstyled small text-muted">
+                            <li><i class="bi bi-check2"></i> DNS queries (10+ resolvers)</li>
+                            <li><i class="bi bi-check2"></i> NTP requests</li>
+                            <li><i class="bi bi-check2"></i> HTTP/HTTPS (150+ sites)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <ul class="list-unstyled small text-muted">
+                            <li><i class="bi bi-check2"></i> 500-3000 destinations</li>
+                            <li><i class="bi bi-check2"></i> Batch packet sending</li>
+                            <li><i class="bi bi-check2"></i> Light / Medium / Heavy presets</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="/" class="btn btn-outline-info btn-sm">Use Auto Mode</a>
+                <span class="text-muted small ms-2">Primary - no target IP needed</span>
+            </div>
+        </div>
+    </div>
+
     <div class="col-md-6 col-lg-4">
         <div class="card bg-dark border-danger h-100">
             <div class="card-body">
@@ -111,7 +147,9 @@
 
 <div class="mt-4 p-3 bg-dark border border-secondary rounded">
     <h5><i class="bi bi-terminal"></i> CLI Usage</h5>
-    <pre class="text-light mb-0"><code>sudo trafficgoat stress   -t &lt;target&gt; -d 60 -r 500
+    <pre class="text-light mb-0"><code>sudo trafficgoat auto     -l heavy -d 300
+sudo trafficgoat auto     -l light -d 60
+sudo trafficgoat stress   -t &lt;target&gt; -d 60 -r 500
 sudo trafficgoat scan     -t &lt;target&gt; -p 1-1024
 sudo trafficgoat mixed    -t &lt;target&gt; -r 200 -d 120
 sudo trafficgoat protocol -t &lt;target&gt; --protocol icmp -d 30

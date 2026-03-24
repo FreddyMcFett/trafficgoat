@@ -50,9 +50,10 @@ class TrafficEngine:
             return
         self._running = False
         self.stats.log("Engine stopping...")
+        self.stats.stop()
+        self.stats.emit_stats()  # Emit immediately so UI updates
         for gen in self._generators:
             gen.stop()
-        self.stats.stop()
         self.stats.log("Engine stopped")
         self.stats.emit_stats()
 
