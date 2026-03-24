@@ -1,0 +1,102 @@
+/* TrafficGoat Web UI Styles */
+
+body {
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+}
+
+.navbar {
+    background-color: #16213e !important;
+}
+
+.navbar-brand {
+    color: #00d4ff !important;
+    font-size: 1.4rem;
+}
+
+.card {
+    transition: transform 0.15s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Stats cards */
+.card .fs-3 {
+    font-family: 'Courier New', monospace;
+}
+
+/* Log container */
+.log-container {
+    background: #0d1117;
+    border-radius: 4px;
+}
+
+.log-line {
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-line:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Generator table */
+.table-dark {
+    --bs-table-bg: transparent;
+}
+
+/* Status badge animation */
+.badge-pulse {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Button states */
+#btn-start:disabled {
+    opacity: 0.5;
+}
+
+#btn-stop:disabled {
+    opacity: 0.5;
+}
+
+/* Mode cards */
+.card-footer {
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Code blocks */
+pre {
+    background: #0d1117;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+code {
+    color: #00d4ff;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4a4a6a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6a6a8a;
+}
