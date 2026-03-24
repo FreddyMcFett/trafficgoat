@@ -100,18 +100,11 @@ body {
     gap: 8px;
 }
 
-.forti-brand-icon {
-    width: 28px;
-    height: 28px;
-    background: linear-gradient(135deg, var(--forti-primary), var(--forti-teal));
+.forti-brand-logo {
+    width: 30px;
+    height: 30px;
     border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 11px;
-    color: #fff;
-    letter-spacing: -0.5px;
+    flex-shrink: 0;
 }
 
 .forti-brand-text {
@@ -252,6 +245,16 @@ body {
 .sidebar-version {
     font-size: 11px;
     color: var(--forti-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sidebar-version-logo {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    opacity: 0.7;
 }
 
 /* ---- Main Content ---- */
