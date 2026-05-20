@@ -1,18 +1,34 @@
 """Flask application factory and Socket.IO setup."""
 
+import logging
+import os
+import secrets
+import threading
 import time
+
 from flask import Flask
 from flask_socketio import SocketIO
+
+
+logger = logging.getLogger(__name__)
 
 socketio = SocketIO()
 
 # Global engine reference for the web app
 _engine = None
 _stats = None
+_engine_lock = threading.Lock()
 
 # Session history - stores completed traffic generation sessions
 _session_history = []
 _current_session = None
+
+# Auth token; populated by create_app(). Empty string disables auth (and
+# triggers a loud warning at startup).
+_auth_token: str = ""
+
+# Safety / CORS settings exposed to routes
+_settings: dict = {}
 
 
 def get_engine():
@@ -31,6 +47,18 @@ def set_engine(engine):
 def set_stats(stats):
     global _stats
     _stats = stats
+
+
+def get_engine_lock() -> threading.Lock:
+    return _engine_lock
+
+
+def get_auth_token() -> str:
+    return _auth_token
+
+
+def get_settings() -> dict:
+    return _settings
 
 
 def get_session_history():
@@ -78,25 +106,79 @@ def get_current_session():
     return _current_session
 
 
-def create_app() -> Flask:
-    """Create and configure the Flask application."""
+def create_app(
+    *,
+    allow_public: bool = False,
+    enable_malicious: bool = False,
+    host: str = "127.0.0.1",
+    port: int = 8080,
+    auth_token: str | None = None,
+) -> Flask:
+    """Create and configure the Flask application.
+
+    Args:
+        allow_public: Allow non-private target IPs (default: False).
+        enable_malicious: Allow MaliciousGenerator gated subtypes (default: False).
+        host / port: Used to pin the Socket.IO CORS origin.
+        auth_token: If None, read from $TRAFFICGOAT_TOKEN or generate one and
+            print it. Empty string disables auth (NOT recommended).
+    """
+    global _auth_token, _settings
+
     app = Flask(
         __name__,
         template_folder="templates",
         static_folder="static",
     )
-    app.config["SECRET_KEY"] = "trafficgoat-secret"
+    # Random per-process secret unless overridden via env.
+    app.config["SECRET_KEY"] = os.environ.get("TRAFFICGOAT_SECRET_KEY") or secrets.token_hex(32)
+
+    # Resolve auth token
+    if auth_token is None:
+        auth_token = os.environ.get("TRAFFICGOAT_TOKEN")
+    if auth_token is None:
+        auth_token = secrets.token_urlsafe(24)
+        print(f"  [auth] Generated auth token: {auth_token}")
+        print("  [auth] Pass this via X-Auth-Token header, ?token= query, "
+              "or $TRAFFICGOAT_TOKEN.")
+    elif auth_token == "":
+        print("  [auth] WARNING: auth disabled (TRAFFICGOAT_TOKEN=\"\"). "
+              "Anyone reachable to this port can launch root-privileged traffic.")
+    _auth_token = auth_token
+
+    _settings = {
+        "allow_public": bool(allow_public),
+        "enable_malicious": bool(enable_malicious),
+        "host": host,
+        "port": port,
+    }
 
     from trafficgoat import __version__
 
     @app.context_processor
     def inject_version():
-        return {"app_version": __version__}
+        # `auth_token` is injected so the dashboard JS can read it from a
+        # <meta> tag and attach it to fetch/Socket.IO requests. The token is
+        # only useful to a client that can already render this page, so this
+        # doesn't widen the trust boundary.
+        return {"app_version": __version__, "auth_token": _auth_token}
 
     from trafficgoat.web.routes import bp
     app.register_blueprint(bp)
 
-    socketio.init_app(app, cors_allowed_origins="*", async_mode="eventlet")
+    # CORS origin pinned to the configured host:port. Allow `*` only when
+    # `allow_public` is set, which already implies the operator has accepted
+    # public-network exposure.
+    if _settings["allow_public"]:
+        cors_origins = "*"
+        logger.warning("Socket.IO CORS set to '*' because --allow-public is enabled")
+    else:
+        cors_origins = [
+            f"http://{host}:{port}",
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+        ]
+    socketio.init_app(app, cors_allowed_origins=cors_origins, async_mode="eventlet")
 
     # Setup stats collector for web
     from trafficgoat.stats import StatsCollector

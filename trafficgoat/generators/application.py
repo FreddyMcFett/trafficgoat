@@ -36,6 +36,7 @@ class ApplicationGenerator(BaseGenerator):
     def _tcp_connect_send(self, port: int, data: bytes, recv: bool = True) -> int:
         """Connect, send data, optionally receive, return bytes transferred."""
         total_bytes = 0
+        sock: socket.socket | None = None
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(3)
@@ -57,10 +58,15 @@ class ApplicationGenerator(BaseGenerator):
                         pass
             else:
                 total_bytes = len(data)
-            sock.close()
             self.stats.update(self.name, packets=1, bytes_sent=total_bytes, connections=1)
-        except (ConnectionRefusedError, socket.timeout, OSError):
+        except (ConnectionRefusedError, socket.timeout, socket.gaierror, OSError):
             self.stats.update(self.name, packets=1, errors=1)
+        finally:
+            if sock is not None:
+                try:
+                    sock.close()
+                except OSError:
+                    pass
         return total_bytes
 
     def _ftp_sim(self):
@@ -68,9 +74,9 @@ class ApplicationGenerator(BaseGenerator):
         self.stats.log(f"{self.name}: FTP simulation to {self.target}:21")
         users = ["admin", "root", "ftp", "anonymous", "user", "test", "backup"]
         passwords = ["admin", "password", "123456", "root", "ftp", "anonymous", "test123"]
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             user = random.choice(users)
             passwd = random.choice(passwords)
@@ -87,9 +93,9 @@ class ApplicationGenerator(BaseGenerator):
             "SSH-2.0-libssh2_1.11.0",
             "SSH-2.0-paramiko_3.4.0",
         ]
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             version = random.choice(client_versions)
             self._tcp_connect_send(22, f"{version}\r\n".encode())
@@ -100,9 +106,9 @@ class ApplicationGenerator(BaseGenerator):
         self.stats.log(f"{self.name}: SMTP simulation to {self.target}:25")
         senders = ["test@example.com", "admin@local.host", "user@mail.test", "noreply@spam.test"]
         recipients = ["admin@target.local", "root@target.local", "info@target.local"]
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             sender = random.choice(senders)
             rcpt = random.choice(recipients)
@@ -119,9 +125,9 @@ class ApplicationGenerator(BaseGenerator):
         """Randomly alternate between FTP, SSH, SMTP."""
         self.stats.log(f"{self.name}: Mixed application traffic to {self.target}")
         methods = [self._ftp_sim, self._ssh_sim, self._smtp_sim]
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             method = random.choice(methods)
             # Run one iteration of each method

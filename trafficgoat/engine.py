@@ -17,17 +17,20 @@ class TrafficEngine:
         self._generators: list[BaseGenerator] = []
         self._running = False
         self._timer_thread: threading.Thread | None = None
+        self._stats_thread: threading.Thread | None = None
+        self._lifecycle_lock = threading.Lock()
 
     def add_generator(self, generator: BaseGenerator):
         self._generators.append(generator)
 
     def start(self):
         """Start all generators and the stats timer."""
-        if self._running:
-            self.stats.log("Engine already running")
-            return
+        with self._lifecycle_lock:
+            if self._running:
+                self.stats.log("Engine already running")
+                return
+            self._running = True
 
-        self._running = True
         self.stats.start()
         self.stats.log(f"Engine starting with {len(self._generators)} generator(s)")
         self.stats.log(f"Target: {self.config.target} | Duration: {self.config.duration}s | Dry-run: {self.config.dry_run}")
@@ -45,15 +48,24 @@ class TrafficEngine:
         self._stats_thread.start()
 
     def stop(self):
-        """Stop all generators."""
-        if not self._running:
-            return
-        self._running = False
+        """Stop all generators (signal all first, then join in a second pass)."""
+        with self._lifecycle_lock:
+            if not self._running:
+                return
+            self._running = False
+
         self.stats.log("Engine stopping...")
         self.stats.stop()
         self.stats.emit_stats()  # Emit immediately so UI updates
+
+        # Phase 1: signal every generator to stop without waiting.
         for gen in self._generators:
-            gen.stop()
+            gen.signal_stop()
+        # Phase 2: actually join (with bounded timeout) only after all signals are sent.
+        for gen in self._generators:
+            gen.join_thread(timeout=5)
+            self.stats.unregister_generator(gen.name)
+
         self.stats.log("Engine stopped")
         self.stats.emit_stats()
 
@@ -82,9 +94,9 @@ class TrafficEngine:
 
     def _duration_timer(self):
         """Stop engine after configured duration."""
-        start = time.time()
+        start = time.monotonic()
         while self._running:
-            if time.time() - start >= self.config.duration:
+            if time.monotonic() - start >= self.config.duration:
                 self.stats.log(f"Duration ({self.config.duration}s) reached")
                 self.stop()
                 return

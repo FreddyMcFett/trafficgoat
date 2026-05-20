@@ -54,9 +54,9 @@ class DNSGenerator(BaseGenerator):
     def _valid_queries(self):
         """Send queries for well-known domains."""
         self.stats.log(f"{self.name}: Valid DNS queries to {self.target}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             domain = random.choice(VALID_DOMAINS)
             qtype = random.choice(QUERY_TYPES[:4])
@@ -67,9 +67,9 @@ class DNSGenerator(BaseGenerator):
         """Send queries with random subdomains (triggers DNS amplification patterns)."""
         self.stats.log(f"{self.name}: Random subdomain queries to {self.target}")
         base_domains = ["example.com", "test.local", "internal.corp"]
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             sub = ''.join(random.choices(string.ascii_lowercase + string.digits, k=random.randint(8, 24)))
             domain = f"{sub}.{random.choice(base_domains)}"
@@ -80,9 +80,9 @@ class DNSGenerator(BaseGenerator):
         """Send queries for non-existent domains."""
         self.stats.log(f"{self.name}: NXDOMAIN flood to {self.target}")
         tlds = [".xyz", ".invalid", ".nxdomain", ".fake", ".notreal"]
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             name = ''.join(random.choices(string.ascii_lowercase, k=random.randint(6, 16)))
             domain = name + random.choice(tlds)
@@ -92,9 +92,9 @@ class DNSGenerator(BaseGenerator):
     def _mixed_dns(self):
         """Mix of all DNS query types."""
         self.stats.log(f"{self.name}: Mixed DNS queries to {self.target}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             choice = random.random()
             if choice < 0.4:

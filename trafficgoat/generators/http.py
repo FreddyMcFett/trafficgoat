@@ -54,39 +54,39 @@ class HTTPGenerator(BaseGenerator):
 
     def generate(self):
         self.stats.log(f"{self.name}: HTTP requests to {self.target} ({len(self.urls)} URLs, methods={self.methods})")
-        session = requests.Session()
-        session.verify = False
-        start = time.time()
+        start = time.monotonic()
+        with requests.Session() as session:
+            session.verify = False
 
-        while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
-                break
+            while not self.should_stop():
+                if self.deadline_reached(start):
+                    break
 
-            url = random.choice(self.urls)
-            method = random.choice(self.methods)
-            headers = {
-                "User-Agent": random.choice(USER_AGENTS),
-                "Accept": "text/html,application/json,*/*",
-                "Accept-Language": random.choice(["en-US,en;q=0.9", "de-DE,de;q=0.9", "fr-FR,fr;q=0.9"]),
-                "Connection": random.choice(["keep-alive", "close"]),
-            }
+                url = random.choice(self.urls)
+                method = random.choice(self.methods)
+                headers = {
+                    "User-Agent": random.choice(USER_AGENTS),
+                    "Accept": "text/html,application/json,*/*",
+                    "Accept-Language": random.choice(["en-US,en;q=0.9", "de-DE,de;q=0.9", "fr-FR,fr;q=0.9"]),
+                    "Connection": random.choice(["keep-alive", "close"]),
+                }
 
-            body = None
-            if method in ("POST", "PUT"):
-                body = f'{{"user":"test{random.randint(1,9999)}","action":"login","timestamp":{int(time.time())}}}'
-                headers["Content-Type"] = "application/json"
+                body = None
+                if method in ("POST", "PUT"):
+                    body = f'{{"user":"test{random.randint(1,9999)}","action":"login","timestamp":{int(time.time())}}}'
+                    headers["Content-Type"] = "application/json"
 
-            try:
-                if not self.dry_run:
-                    resp = session.request(
-                        method, url, headers=headers, data=body,
-                        timeout=5, allow_redirects=False,
-                    )
-                    size = len(resp.content) + len(str(resp.headers))
-                    self.stats.update(self.name, packets=1, bytes_sent=size, connections=1)
-                else:
-                    self.stats.update(self.name, packets=1, bytes_sent=256)
-            except requests.RequestException:
-                self.stats.update(self.name, packets=1, errors=1)
+                try:
+                    if not self.dry_run:
+                        resp = session.request(
+                            method, url, headers=headers, data=body,
+                            timeout=5, allow_redirects=False,
+                        )
+                        size = len(resp.content) + len(str(resp.headers))
+                        self.stats.update(self.name, packets=1, bytes_sent=size, connections=1)
+                    else:
+                        self.stats.update(self.name, packets=1, bytes_sent=256)
+                except requests.RequestException:
+                    self.stats.update(self.name, packets=1, errors=1)
 
-            self.throttle()
+                self.throttle()

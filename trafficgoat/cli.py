@@ -6,10 +6,11 @@ import sys
 import time
 
 from trafficgoat import __version__
-from trafficgoat.config import TrafficConfig
+from trafficgoat.config import TrafficConfig, ConfigError
 from trafficgoat.engine import TrafficEngine
 from trafficgoat.stats import StatsCollector
 from trafficgoat.modes import MODES
+from trafficgoat.safety import check_target, UnsafeTargetError
 
 
 BANNER = r"""
@@ -46,6 +47,19 @@ def print_stats(stats_data: dict, quiet: bool = False):
     sys.stdout.flush()
 
 
+def _add_safety_flags(parser: argparse.ArgumentParser) -> None:
+    """Add --allow-public / --enable-malicious to a subparser."""
+    parser.add_argument(
+        "--allow-public", action="store_true",
+        help="Permit non-private target IPs (default: only loopback/RFC1918/link-local).",
+    )
+    parser.add_argument(
+        "--enable-malicious", action="store_true",
+        help="Permit MaliciousGenerator subtypes (bruteforce/ddos/amplification). "
+             "Off by default; portscan is allowed without this flag.",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="trafficgoat",
@@ -80,6 +94,7 @@ Examples:
     common.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     common.add_argument("-q", "--quiet", action="store_true", help="Minimal output")
     common.add_argument("--dry-run", action="store_true", help="Show what would be generated without sending")
+    _add_safety_flags(common)
 
     # Mode subcommands
     subparsers.add_parser("stress", parents=[common], help="High-volume stress test")
@@ -104,6 +119,7 @@ Examples:
     auto_common.add_argument("--dry-run", action="store_true", help="Show what would be generated without sending")
     auto_common.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     auto_common.add_argument("-q", "--quiet", action="store_true", help="Minimal output")
+    _add_safety_flags(auto_common)
 
     auto_parser = subparsers.add_parser("auto", parents=[auto_common], help="Zero-config multi-destination traffic")
     auto_parser.add_argument(
@@ -114,17 +130,37 @@ Examples:
 
     # Web UI mode
     web_parser = subparsers.add_parser("web", help="Start the Web UI")
-    web_parser.add_argument("--host", default="0.0.0.0", help="Bind address (default: 0.0.0.0)")
+    web_parser.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1; use 0.0.0.0 with care)")
     web_parser.add_argument("--web-port", type=int, default=8080, help="Web UI port (default: 8080)")
     web_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    web_parser.add_argument("--dev", action="store_true",
+                            help="Use the unsafe werkzeug dev server (development only).")
+    _add_safety_flags(web_parser)
 
     return parser
+
+
+def _validate_and_check(config: TrafficConfig, *, quiet: bool = False) -> None:
+    """Run validate() and the target allowlist; exit(2) on failure."""
+    try:
+        config.validate()
+    except ConfigError as e:
+        print(f"[!] Invalid configuration: {e}")
+        sys.exit(2)
+    try:
+        check_target(config.target, allow_public=config.allow_public)
+    except UnsafeTargetError as e:
+        print(f"[!] {e}")
+        sys.exit(2)
+    if not quiet and config.allow_public and config.target not in ("0.0.0.0", ""):
+        print(f"[!] --allow-public is set: traffic will be sent to {config.target}")
 
 
 def run_cli(args):
     """Run traffic generation in CLI mode."""
     if args.mode == "auto":
-        # Auto mode uses its own config (no target required)
+        # Auto mode targets a built-in pool of public domains. The user opting
+        # into `auto` is opting into public targets by definition.
         config = TrafficConfig(
             target="0.0.0.0",
             duration=getattr(args, "duration", 120),
@@ -132,10 +168,18 @@ def run_cli(args):
             mode="auto",
             verbose=getattr(args, "verbose", False),
             quiet=getattr(args, "quiet", False),
+            allow_public=True,
+            enable_malicious=getattr(args, "enable_malicious", False),
         )
         config.auto_load = getattr(args, "load", "medium")
     else:
         config = TrafficConfig.from_args(args)
+    if config.mode == "scan":
+        # Port scanning is the whole point of `scan` mode.
+        config.enable_malicious = True
+
+    _validate_and_check(config, quiet=config.quiet)
+
     stats = StatsCollector()
 
     # Setup live stats printing
@@ -151,6 +195,12 @@ def run_cli(args):
 
     engine = TrafficEngine(config, stats)
     mode_class.configure(config, engine, stats)
+    # Propagate enable_malicious to gated generators created by the mode.
+    for gen in engine._generators:
+        if hasattr(gen, "config"):
+            gen.config.enable_malicious = config.enable_malicious
+            if hasattr(gen, "enable_malicious"):
+                gen.enable_malicious = config.enable_malicious
 
     if not config.quiet:
         print(f"\n  Mode: {mode_class.name} - {mode_class.description}")
@@ -183,13 +233,27 @@ def run_web(args):
     host = args.host
     port = args.web_port
 
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        print(f"[!] WARNING: binding to {host} exposes the web UI on the network.")
+        print(f"[!] Anyone who can reach this host can launch root-privileged traffic.")
+        if not args.allow_public:
+            print(f"[!] Targets are still restricted to private IPs unless --allow-public is set.")
+
     if not args.verbose:
         print(BANNER)
     print(f"  Starting TrafficGoat Web UI on http://{host}:{port}")
     print(f"  Press Ctrl+C to stop\n")
 
-    app = create_app()
-    socketio.run(app, host=host, port=port, debug=args.verbose, allow_unsafe_werkzeug=True)
+    app = create_app(
+        allow_public=args.allow_public,
+        enable_malicious=args.enable_malicious,
+        host=host,
+        port=port,
+    )
+    # The werkzeug dev server is not safe for production. Require --dev to
+    # acknowledge this.
+    socketio.run(app, host=host, port=port, debug=args.verbose,
+                 allow_unsafe_werkzeug=bool(args.dev))
 
 
 def main():

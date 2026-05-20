@@ -5,6 +5,17 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
+# Bounds for user-supplied numeric config. Generous but finite.
+MAX_RATE = 1_000_000          # packets per second
+MAX_THREADS = 256
+MAX_DURATION = 86_400         # 1 day
+MAX_PORT = 65_535
+
+
+class ConfigError(ValueError):
+    """Raised when a TrafficConfig fails validation."""
+
+
 @dataclass
 class GeneratorConfig:
     """Configuration for a single traffic generator."""
@@ -22,6 +33,8 @@ class GeneratorConfig:
     subtype: str = ""  # ftp, ssh, smtp, portscan, bruteforce
     # Extra kwargs
     options: dict = field(default_factory=dict)
+    # Safety: allow this generator to run aggressive/malicious patterns
+    enable_malicious: bool = False
 
 
 @dataclass
@@ -39,6 +52,11 @@ class TrafficConfig:
     mode: str = "stress"
     protocol: str = ""
     generators: list = field(default_factory=list)
+    # Auto-mode load level (light / medium / heavy). Was a dynamic attribute.
+    auto_load: str = "medium"
+    # Safety flags
+    allow_public: bool = False
+    enable_malicious: bool = False
 
     @classmethod
     def from_dict(cls, data: dict) -> "TrafficConfig":
@@ -72,6 +90,8 @@ class TrafficConfig:
             dry_run=getattr(args, "dry_run", False),
             mode=getattr(args, "mode", "stress"),
             protocol=getattr(args, "protocol", ""),
+            allow_public=getattr(args, "allow_public", False),
+            enable_malicious=getattr(args, "enable_malicious", False),
         )
         # Load from config file if specified
         config_file = getattr(args, "config", None)
@@ -82,6 +102,25 @@ class TrafficConfig:
                 config.target = file_config.target
             config.generators = file_config.generators
         return config
+
+    def validate(self) -> None:
+        """Range-check user-supplied numeric fields. Raises ConfigError on failure.
+
+        Target allowlist enforcement lives in `trafficgoat.safety.check_target`
+        and is called separately so it can be skipped in pure dry-run unit
+        tests if needed.
+        """
+        if not (1 <= self.rate <= MAX_RATE):
+            raise ConfigError(f"rate must be 1..{MAX_RATE}, got {self.rate}")
+        if not (1 <= self.threads <= MAX_THREADS):
+            raise ConfigError(f"threads must be 1..{MAX_THREADS}, got {self.threads}")
+        # duration=0 means "run until stopped"; allow it explicitly.
+        if not (0 <= self.duration <= MAX_DURATION):
+            raise ConfigError(f"duration must be 0..{MAX_DURATION}, got {self.duration}")
+        if self.ports:
+            for p in parse_ports(self.ports):
+                if not (1 <= p <= MAX_PORT):
+                    raise ConfigError(f"port out of range: {p}")
 
 
 def parse_ports(port_str: str) -> list[int]:
