@@ -12,6 +12,12 @@ from trafficgoat.config import GeneratorConfig, parse_ports
 from trafficgoat.stats import StatsCollector
 
 
+# Subtypes that require explicit opt-in via `--enable-malicious`. `portscan`
+# is deliberately excluded — it is the normal recon path used by the `scan`
+# mode and isn't more aggressive than what nmap does.
+GATED_SUBTYPES = frozenset({"bruteforce", "ddos", "amplification", "mixed"})
+
+
 class MaliciousGenerator(BaseGenerator):
     """Generate malicious traffic patterns for firewall testing."""
 
@@ -26,8 +32,20 @@ class MaliciousGenerator(BaseGenerator):
             self.subtype = "mixed"
         self.name = f"mal:{self.subtype}"
         self.port_list = parse_ports(self.ports)
+        self.enable_malicious = bool(getattr(config, "enable_malicious", False))
 
     def generate(self):
+        # Refuse aggressive subtypes unless explicitly enabled. The error path
+        # is intentionally loud — running this against a host the user doesn't
+        # own is the worst-case failure mode for this tool.
+        if self.subtype in GATED_SUBTYPES and not self.enable_malicious:
+            self.stats.log(
+                f"{self.name}: refusing to run gated subtype {self.subtype!r}. "
+                f"Pass --enable-malicious (CLI) or enable_malicious=true (API)."
+            )
+            self.stats.update(self.name, errors=1)
+            return
+
         if self.subtype == "portscan":
             self._port_scan()
         elif self.subtype == "bruteforce":
@@ -43,13 +61,13 @@ class MaliciousGenerator(BaseGenerator):
         """Sequential and random port scanning."""
         self.stats.log(f"{self.name}: Port scan on {self.target}")
         scan_types = ["syn", "connect", "fin", "xmas", "null"]
-        start = time.time()
+        start = time.monotonic()
 
         # Sequential scan
         for port in self.port_list:
             if self.should_stop():
                 break
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             scan_type = random.choice(scan_types)
             if scan_type == "syn":
@@ -58,15 +76,21 @@ class MaliciousGenerator(BaseGenerator):
                     send(pkt, verbose=0)
                 self.stats.update(self.name, packets=1, bytes_sent=len(pkt))
             elif scan_type == "connect":
+                sock: socket.socket | None = None
                 try:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     sock.settimeout(1)
                     if not self.dry_run:
-                        result = sock.connect_ex((self.target, port))
-                    sock.close()
+                        sock.connect_ex((self.target, port))
                     self.stats.update(self.name, packets=1, bytes_sent=64, connections=1)
-                except (socket.timeout, OSError):
+                except (socket.timeout, socket.gaierror, OSError):
                     self.stats.update(self.name, packets=1, errors=1)
+                finally:
+                    if sock is not None:
+                        try:
+                            sock.close()
+                        except OSError:
+                            pass
             elif scan_type == "fin":
                 pkt = IP(dst=self.target) / TCP(sport=int(RandShort()), dport=port, flags="F")
                 if not self.dry_run:
@@ -100,15 +124,16 @@ class MaliciousGenerator(BaseGenerator):
             "111111", "baseball", "shadow", "1234567890", "password1",
         ]
         users = ["admin", "root", "user", "test", "guest", "operator"]
-        start = time.time()
+        start = time.monotonic()
 
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             port, template = random.choice(services)
             pwd = random.choice(passwords)
             user = random.choice(users)
             data = template.format(pwd=pwd, user=user).encode()
+            sock: socket.socket | None = None
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(2)
@@ -119,18 +144,23 @@ class MaliciousGenerator(BaseGenerator):
                     except socket.timeout:
                         pass
                     sock.sendall(data)
-                sock.close()
                 self.stats.update(self.name, packets=1, bytes_sent=len(data), connections=1)
-            except (ConnectionRefusedError, socket.timeout, OSError):
+            except (ConnectionRefusedError, socket.timeout, socket.gaierror, OSError):
                 self.stats.update(self.name, packets=1, errors=1)
+            finally:
+                if sock is not None:
+                    try:
+                        sock.close()
+                    except OSError:
+                        pass
             self.throttle()
 
     def _ddos_patterns(self):
         """Simulate various DDoS patterns."""
         self.stats.log(f"{self.name}: DDoS patterns to {self.target}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             pattern = random.choice(["syn_flood", "udp_flood", "icmp_flood", "mixed"])
             port = random.choice(self.port_list)
@@ -181,9 +211,9 @@ class MaliciousGenerator(BaseGenerator):
     def _amplification(self):
         """Simulate DNS/NTP amplification patterns."""
         self.stats.log(f"{self.name}: Amplification patterns to {self.target}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             # Large DNS queries (ANY type)
             from scapy.all import DNS, DNSQR

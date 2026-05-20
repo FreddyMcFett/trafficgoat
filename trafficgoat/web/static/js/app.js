@@ -3,8 +3,22 @@
 (function() {
     'use strict';
 
-    // Socket.IO connection
-    var socket = io();
+    // ---- Auth ----
+    var tokenMeta = document.querySelector('meta[name="trafficgoat-token"]');
+    var authToken = tokenMeta ? tokenMeta.getAttribute('content') : '';
+
+    function tgFetch(url, options) {
+        options = options || {};
+        var headers = Object.assign({}, options.headers || {});
+        if (authToken) headers['X-Auth-Token'] = authToken;
+        options.headers = headers;
+        return fetch(url, options);
+    }
+    window.tgFetch = tgFetch;
+
+    // Socket.IO connection — pass token in query so the connect handler can verify it.
+    var ioOpts = authToken ? { query: { token: authToken } } : {};
+    var socket = io(ioOpts);
     window.trafficGoat = { socket: socket };
 
     // ---- State ----
@@ -405,7 +419,7 @@
     // ---- Session History ----
 
     function loadHistory() {
-        fetch('/api/history?n=20')
+        tgFetch('/api/history?n=20')
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 var tbody = document.getElementById('history-table');
@@ -449,7 +463,7 @@
     function managePoll(running) {
         if (running && !pollInterval) {
             pollInterval = setInterval(function() {
-                fetch('/api/status')
+                tgFetch('/api/status')
                     .then(function(r) { return r.json(); })
                     .then(function(data) { updateStats(data); })
                     .catch(function() {});
@@ -548,7 +562,7 @@
                 // Reset chart data for new session
                 chartData = { labels: [], pps: [], bytes: [] };
 
-                fetch('/api/start', {
+                tgFetch('/api/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
@@ -600,7 +614,7 @@
 
                 chartData = { labels: [], pps: [], bytes: [] };
 
-                fetch('/api/start', {
+                tgFetch('/api/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
@@ -620,7 +634,7 @@
             var btn = document.getElementById(id);
             if (btn) {
                 btn.addEventListener('click', function() {
-                    fetch('/api/stop', { method: 'POST' })
+                    tgFetch('/api/stop', { method: 'POST' })
                         .then(function(r) { return r.json(); })
                         .then(function() {
                             updateButtons(false);
@@ -631,7 +645,7 @@
         });
 
         // --- Initial status fetch ---
-        fetch('/api/status')
+        tgFetch('/api/status')
             .then(function(r) { return r.json(); })
             .then(updateStats)
             .catch(function() {});

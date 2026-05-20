@@ -33,9 +33,9 @@ class UDPGenerator(BaseGenerator):
     def _random_udp(self):
         """Send random UDP packets."""
         self.stats.log(f"{self.name}: Random UDP to {self.target} ports {self.ports}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             port = random.choice(self.port_list)
             payload = os.urandom(random.randint(512, 1400))
@@ -56,9 +56,9 @@ class UDPGenerator(BaseGenerator):
             "admin.internal.local", "api.service.io", "cdn.static.net",
         ]
         self.stats.log(f"{self.name}: DNS queries to {self.target}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             domain = random.choice(domains)
             qtype = random.choice(["A", "AAAA", "MX", "NS", "TXT", "CNAME"])
@@ -73,9 +73,9 @@ class UDPGenerator(BaseGenerator):
     def _ntp_requests(self):
         """Send NTP requests."""
         self.stats.log(f"{self.name}: NTP requests to {self.target}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             pkt = IP(dst=self.target) / UDP(dport=123) / NTP(version=3)
             if not self.dry_run:

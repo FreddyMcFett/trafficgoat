@@ -1,8 +1,12 @@
 """Live statistics collector for TrafficGoat."""
 
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -20,7 +24,7 @@ class GeneratorStats:
     def elapsed(self) -> float:
         if self.start_time == 0:
             return 0
-        return (self.last_update or time.time()) - self.start_time
+        return max((self.last_update or time.monotonic()) - self.start_time, 0.0)
 
     @property
     def pps(self) -> float:
@@ -61,7 +65,7 @@ class StatsCollector:
 
     def register_generator(self, name: str):
         with self._lock:
-            self._generators[name] = GeneratorStats(name=name, start_time=time.time())
+            self._generators[name] = GeneratorStats(name=name, start_time=time.monotonic())
 
     def unregister_generator(self, name: str):
         with self._lock:
@@ -76,9 +80,11 @@ class StatsCollector:
                 stats.bytes_sent += bytes_sent
                 stats.errors += errors
                 stats.connections += connections
-                stats.last_update = time.time()
+                stats.last_update = time.monotonic()
 
     def log(self, message: str):
+        # Wall-clock timestamp is intentional here — these are user-facing log
+        # lines. Durations elsewhere use monotonic.
         timestamp = time.strftime("%H:%M:%S")
         line = f"[{timestamp}] {message}"
         with self._lock:
@@ -89,7 +95,7 @@ class StatsCollector:
             try:
                 cb(line)
             except Exception:
-                pass
+                logger.warning("log callback raised", exc_info=True)
 
     def on_log(self, callback):
         self._log_callbacks.append(callback)
@@ -107,10 +113,11 @@ class StatsCollector:
             total_packets = sum(s.packets_sent for s in self._generators.values())
             total_bytes = sum(s.bytes_sent for s in self._generators.values())
             total_errors = sum(s.errors for s in self._generators.values())
-            elapsed = time.time() - self._start_time if self._start_time else 0
+            elapsed = time.monotonic() - self._start_time if self._start_time else 0
+            running = self._running
 
         return {
-            "running": self._running,
+            "running": running,
             "elapsed": round(elapsed, 1),
             "total_packets": total_packets,
             "total_bytes": total_bytes,
@@ -121,11 +128,13 @@ class StatsCollector:
         }
 
     def start(self):
-        self._running = True
-        self._start_time = time.time()
+        with self._lock:
+            self._running = True
+            self._start_time = time.monotonic()
 
     def stop(self):
-        self._running = False
+        with self._lock:
+            self._running = False
 
     def reset(self):
         with self._lock:
@@ -141,4 +150,4 @@ class StatsCollector:
             try:
                 cb(stats)
             except Exception:
-                pass
+                logger.warning("stats callback raised", exc_info=True)

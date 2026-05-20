@@ -341,7 +341,7 @@ class AutoRawGenerator(BaseGenerator):
             f"{self.name}: Multi-target raw traffic to "
             f"{len(self.destinations)} destinations at {self.rate} pps"
         )
-        start = time.time()
+        start = time.monotonic()
 
         protocols = [
             'tcp_syn', 'udp', 'icmp', 'dns', 'ntp',
@@ -357,7 +357,7 @@ class AutoRawGenerator(BaseGenerator):
         ]
 
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
 
             packets = []
@@ -651,10 +651,10 @@ class AutoBulkGenerator(BaseGenerator):
             f"{len(self.destinations)} destinations at {self.rate} pps "
             f"(batch={self.batch_size}, ~{self.batch_size * 1400} bytes/batch)"
         )
-        start = time.time()
+        start = time.monotonic()
 
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
 
             packets = []
@@ -704,51 +704,51 @@ class AutoHTTPGenerator(BaseGenerator):
         self.stats.log(
             f"{self.name}: HTTP traffic to {len(self.domains)} domains at {self.rate} pps"
         )
-        session = req_lib.Session()
-        session.verify = False
-
         methods = ["GET", "HEAD", "POST"]
-        start = time.time()
+        start = time.monotonic()
 
-        while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
-                break
+        with req_lib.Session() as session:
+            session.verify = False
 
-            domain = random.choice(self.domains)
-            scheme = random.choice(["http", "https"])
-            path = random.choice(HTTP_PATHS)
-            method = random.choice(methods)
-            url = f"{scheme}://{domain}{path}"
+            while not self.should_stop():
+                if self.deadline_reached(start):
+                    break
 
-            headers = {
-                "User-Agent": random.choice(HTTP_USER_AGENTS),
-                "Accept": "text/html,application/json,*/*",
-                "Accept-Language": random.choice([
-                    "en-US,en;q=0.9", "de-DE,de;q=0.9", "fr-FR,fr;q=0.9",
-                    "es-ES,es;q=0.9", "ja-JP,ja;q=0.9", "zh-CN,zh;q=0.9",
-                ]),
-                "Connection": random.choice(["keep-alive", "close"]),
-            }
+                domain = random.choice(self.domains)
+                scheme = random.choice(["http", "https"])
+                path = random.choice(HTTP_PATHS)
+                method = random.choice(methods)
+                url = f"{scheme}://{domain}{path}"
 
-            body = None
-            if method == "POST":
-                body = f'{{"user":"test{random.randint(1,9999)}","ts":{int(time.time())}}}'
-                headers["Content-Type"] = "application/json"
+                headers = {
+                    "User-Agent": random.choice(HTTP_USER_AGENTS),
+                    "Accept": "text/html,application/json,*/*",
+                    "Accept-Language": random.choice([
+                        "en-US,en;q=0.9", "de-DE,de;q=0.9", "fr-FR,fr;q=0.9",
+                        "es-ES,es;q=0.9", "ja-JP,ja;q=0.9", "zh-CN,zh;q=0.9",
+                    ]),
+                    "Connection": random.choice(["keep-alive", "close"]),
+                }
 
-            try:
-                if not self.dry_run:
-                    resp = session.request(
-                        method, url, headers=headers, data=body,
-                        timeout=3, allow_redirects=False,
-                    )
-                    size = len(resp.content) + len(str(resp.headers))
-                    self.stats.update(self.name, packets=1, bytes_sent=size, connections=1)
-                else:
-                    self.stats.update(self.name, packets=1, bytes_sent=512)
-            except Exception:
-                self.stats.update(self.name, packets=1, errors=1)
+                body = None
+                if method == "POST":
+                    body = f'{{"user":"test{random.randint(1,9999)}","ts":{int(time.time())}}}'
+                    headers["Content-Type"] = "application/json"
 
-            self.throttle()
+                try:
+                    if not self.dry_run:
+                        resp = session.request(
+                            method, url, headers=headers, data=body,
+                            timeout=3, allow_redirects=False,
+                        )
+                        size = len(resp.content) + len(str(resp.headers))
+                        self.stats.update(self.name, packets=1, bytes_sent=size, connections=1)
+                    else:
+                        self.stats.update(self.name, packets=1, bytes_sent=512)
+                except Exception:
+                    self.stats.update(self.name, packets=1, errors=1)
+
+                self.throttle()
 
 
 class AutoTCPConnectGenerator(BaseGenerator):
@@ -772,14 +772,15 @@ class AutoTCPConnectGenerator(BaseGenerator):
         self.stats.log(
             f"{self.name}: TCP connect to {len(self.destinations)} destinations at {self.rate} pps"
         )
-        start = time.time()
+        start = time.monotonic()
 
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
 
             dst = random.choice(self.destinations)
             port = random.choice(TCP_PORTS)
+            sock: socket.socket | None = None
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(1)
@@ -788,9 +789,14 @@ class AutoTCPConnectGenerator(BaseGenerator):
                     self.stats.update(self.name, packets=1, bytes_sent=64, connections=1)
                 else:
                     self.stats.update(self.name, packets=1, bytes_sent=64)
-                sock.close()
-            except (ConnectionRefusedError, socket.timeout, OSError):
+            except (ConnectionRefusedError, socket.timeout, socket.gaierror, OSError):
                 self.stats.update(self.name, packets=1, errors=1)
+            finally:
+                if sock is not None:
+                    try:
+                        sock.close()
+                    except OSError:
+                        pass
 
             self.throttle()
 
@@ -883,7 +889,7 @@ class AutoCurlGenerator(BaseGenerator):
             f"{self.name}: Curl-based heavy HTTP load to {len(self.domains)} domains "
             f"at {self.rate} rps (parallel={self.parallel})"
         )
-        start = time.time()
+        start = time.monotonic()
 
         methods = ["GET", "GET", "GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"]
         api_paths = HTTP_PATHS + [
@@ -897,7 +903,7 @@ class AutoCurlGenerator(BaseGenerator):
         ]
 
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
 
             # Launch parallel curl processes
@@ -1026,14 +1032,16 @@ class AutoSaaSGenerator(BaseGenerator):
         self.stats.log(
             f"{self.name}: SaaS API traffic to {len(self.domains)} services at {self.rate} rps"
         )
-        session = req_lib.Session()
-        session.verify = False
-
         categories = list(self.SAAS_API_PATHS.keys())
-        start = time.time()
+        start = time.monotonic()
 
+        with req_lib.Session() as session:
+            session.verify = False
+            self._saas_loop(session, categories, start)
+
+    def _saas_loop(self, session, categories, start):
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
 
             domain = random.choice(self.domains)

@@ -50,11 +50,19 @@ class BaseGenerator(ABC):
         finally:
             self.stats.log(f"{self.name}: Stopped")
 
-    def stop(self):
-        """Signal the generator to stop."""
+    def signal_stop(self):
+        """Mark this generator for shutdown without joining its thread."""
         self._stop_event.set()
+
+    def join_thread(self, timeout: float = 5):
+        """Wait for the generator thread to terminate."""
         if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=5)
+            self._thread.join(timeout=timeout)
+
+    def stop(self):
+        """Signal the generator to stop and join in one call (legacy API)."""
+        self.signal_stop()
+        self.join_thread()
         self.stats.unregister_generator(self.name)
 
     def is_running(self) -> bool:
@@ -67,3 +75,13 @@ class BaseGenerator(ABC):
         """Sleep to maintain target rate."""
         if self._delay > 0:
             time.sleep(self._delay)
+
+    def deadline_reached(self, start: float) -> bool:
+        """True if `self.duration > 0` and `start` was at least `duration` ago.
+
+        Helper to remove the duplicated
+        `if self.duration > 0 and time.monotonic() - start >= self.duration: break`
+        boilerplate from every generator's loop. `start` should come from
+        `time.monotonic()`.
+        """
+        return self.duration > 0 and (time.monotonic() - start) >= self.duration

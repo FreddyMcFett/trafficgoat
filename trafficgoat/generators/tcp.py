@@ -41,9 +41,9 @@ class TCPGenerator(BaseGenerator):
     def _syn_flood(self):
         """Send TCP SYN packets using scapy."""
         self.stats.log(f"{self.name}: SYN flood to {self.target} ports {self.ports}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             port = random.choice(self.port_list)
             pkt = IP(dst=self.target) / TCP(
@@ -60,11 +60,12 @@ class TCPGenerator(BaseGenerator):
     def _full_connect(self):
         """Full TCP connect using socket."""
         self.stats.log(f"{self.name}: Full connect to {self.target} ports {self.ports}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             port = random.choice(self.port_list)
+            sock: socket.socket | None = None
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(2)
@@ -73,18 +74,23 @@ class TCPGenerator(BaseGenerator):
                     self.stats.update(self.name, packets=1, bytes_sent=64, connections=1)
                 else:
                     self.stats.update(self.name, packets=1, bytes_sent=64)
-                sock.close()
-            except (ConnectionRefusedError, socket.timeout, OSError):
+            except (ConnectionRefusedError, socket.timeout, socket.gaierror, OSError):
                 self.stats.update(self.name, packets=1, errors=1)
+            finally:
+                if sock is not None:
+                    try:
+                        sock.close()
+                    except OSError:
+                        pass
             self.throttle()
 
     def _flag_scan(self, flags: str):
         """Send TCP packets with custom flags."""
         flag_name = flags if flags else "NULL"
         self.stats.log(f"{self.name}: {flag_name} scan to {self.target} ports {self.ports}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             port = random.choice(self.port_list)
             pkt = IP(dst=self.target) / TCP(

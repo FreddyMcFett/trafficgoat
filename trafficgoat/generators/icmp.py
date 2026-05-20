@@ -31,9 +31,9 @@ class ICMPGenerator(BaseGenerator):
         """Send ICMP echo requests (ping flood)."""
         self.stats.log(f"{self.name}: Ping flood to {self.target}")
         seq = 0
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             payload = os.urandom(random.randint(56, 512))
             pkt = IP(dst=self.target) / ICMP(
@@ -58,9 +58,9 @@ class ICMPGenerator(BaseGenerator):
             (17, 0, "Address Mask Request"),
         ]
         self.stats.log(f"{self.name}: Mixed ICMP types to {self.target}")
-        start = time.time()
+        start = time.monotonic()
         while not self.should_stop():
-            if self.duration > 0 and time.time() - start >= self.duration:
+            if self.deadline_reached(start):
                 break
             icmp_type, icmp_code, desc = random.choice(icmp_types)
             pkt = IP(dst=self.target) / ICMP(type=icmp_type, code=icmp_code) / os.urandom(56)
