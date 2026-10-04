@@ -82,9 +82,14 @@ sudo trafficgoat protocol -t 192.168.1.1 --protocol tcp --enable-malicious
 sudo trafficgoat web --web-port 8080
 ```
 
-On startup the server prints the generated auth token. Pass it as
-`Authorization: Bearer <token>`, `X-Auth-Token: <token>`, or `?token=<token>`.
-Pin a stable token via the environment:
+On startup, if `TRAFFICGOAT_TOKEN` isn't set, the server generates a token and
+writes it to a `0600` file under `$XDG_RUNTIME_DIR` (falling back to
+`/run/trafficgoat` or the system tempdir) — only the *path* is printed, never
+the token itself, so it can't leak into syslog / container log aggregators.
+Read it with `cat <path>` and pass it as `Authorization: Bearer <token>`,
+`X-Auth-Token: <token>`, or `?token=<token>`.
+
+Pin a stable token via the environment to skip the generated file:
 
 ```bash
 export TRAFFICGOAT_TOKEN="your-long-random-token"
@@ -94,6 +99,17 @@ sudo -E trafficgoat web --web-port 8080
 
 Set `TRAFFICGOAT_TOKEN=""` (empty string) to disable auth entirely — only do this
 on a trusted, isolated network. The server logs a warning when auth is off.
+
+**Socket.IO CORS** is pinned to the configured `host:port` by default and is
+*not* widened by `--allow-public` (which only affects the *target* allowlist).
+To allow cross-origin dashboard access, set
+`TRAFFICGOAT_CORS_ORIGINS="http://dash.example.com,http://other.example.com"`
+(or `*` if you really want to open it).
+
+**Rate limiting** (in-memory, per-token-or-IP, per-endpoint):
+`/api/start` 3/10s · `/api/stop` 5/10s · `/api/logs` 30/5s · `/api/history` 30/5s.
+Excess requests get `429` with a `Retry-After` header. Request bodies are
+capped at 1 MiB.
 
 The Web UI provides:
 

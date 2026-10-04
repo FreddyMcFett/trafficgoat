@@ -3,6 +3,7 @@
 import logging
 import os
 import secrets
+import tempfile
 import threading
 import time
 
@@ -106,6 +107,44 @@ def get_current_session():
     return _current_session
 
 
+def _write_token_file(token: str) -> str:
+    """Persist a generated auth token to a 0600 file and return the path.
+
+    Picks the first writable directory in: $XDG_RUNTIME_DIR, /run/trafficgoat,
+    tempfile.gettempdir(). The file is created with mode 0600 so non-owners
+    can't read it on shared hosts.
+    """
+    candidates = []
+    if os.environ.get("XDG_RUNTIME_DIR"):
+        candidates.append(os.environ["XDG_RUNTIME_DIR"])
+    candidates.extend(["/run/trafficgoat", tempfile.gettempdir()])
+
+    for d in candidates:
+        try:
+            os.makedirs(d, exist_ok=True)
+        except OSError:
+            continue
+        try:
+            fd, path = tempfile.mkstemp(
+                prefix="trafficgoat-token-", suffix=".txt", dir=d,
+            )
+        except OSError:
+            continue
+        try:
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "w") as f:
+                f.write(token + "\n")
+            return path
+        except OSError:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+            continue
+    # Should not happen — tempfile.gettempdir() is always writable in practice.
+    raise RuntimeError("Could not write auth token file in any candidate dir")
+
+
 def create_app(
     *,
     allow_public: bool = False,
@@ -133,14 +172,19 @@ def create_app(
     # Random per-process secret unless overridden via env.
     app.config["SECRET_KEY"] = os.environ.get("TRAFFICGOAT_SECRET_KEY") or secrets.token_hex(32)
 
-    # Resolve auth token
+    # Resolve auth token. When we generate one we write it to a 0600 file and
+    # print only the path; printing the token to stdout would leak it into
+    # syslog / journal / container log aggregators.
     if auth_token is None:
         auth_token = os.environ.get("TRAFFICGOAT_TOKEN")
     if auth_token is None:
         auth_token = secrets.token_urlsafe(24)
-        print(f"  [auth] Generated auth token: {auth_token}")
-        print("  [auth] Pass this via X-Auth-Token header, ?token= query, "
-              "or $TRAFFICGOAT_TOKEN.")
+        token_path = _write_token_file(auth_token)
+        prefix = auth_token[:4]
+        print(f"  [auth] Generated auth token (starts with {prefix}…).")
+        print(f"  [auth] Saved to: {token_path} (mode 0600)")
+        print(f"  [auth] Read it via: cat {token_path}")
+        print( "  [auth] Set $TRAFFICGOAT_TOKEN to pin a stable token and skip this file.")
     elif auth_token == "":
         print("  [auth] WARNING: auth disabled (TRAFFICGOAT_TOKEN=\"\"). "
               "Anyone reachable to this port can launch root-privileged traffic.")
@@ -166,12 +210,17 @@ def create_app(
     from trafficgoat.web.routes import bp
     app.register_blueprint(bp)
 
-    # CORS origin pinned to the configured host:port. Allow `*` only when
-    # `allow_public` is set, which already implies the operator has accepted
-    # public-network exposure.
-    if _settings["allow_public"]:
+    # CORS origin pinned to the configured host:port. `--allow-public` only
+    # widens the *target* allowlist — it must not also open the Socket.IO
+    # origin to the world. Operators who need cross-origin access (e.g. a
+    # separate dashboard host) can set $TRAFFICGOAT_CORS_ORIGINS to a
+    # comma-separated list of origins (or `*` if they really mean it).
+    cors_env = os.environ.get("TRAFFICGOAT_CORS_ORIGINS", "").strip()
+    if cors_env == "*":
         cors_origins = "*"
-        logger.warning("Socket.IO CORS set to '*' because --allow-public is enabled")
+        logger.warning("Socket.IO CORS set to '*' via $TRAFFICGOAT_CORS_ORIGINS")
+    elif cors_env:
+        cors_origins = [o.strip() for o in cors_env.split(",") if o.strip()]
     else:
         cors_origins = [
             f"http://{host}:{port}",
@@ -179,6 +228,9 @@ def create_app(
             f"http://127.0.0.1:{port}",
         ]
     socketio.init_app(app, cors_allowed_origins=cors_origins, async_mode="eventlet")
+
+    # Cap request body size; the API only accepts small JSON payloads.
+    app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024  # 1 MiB
 
     # Setup stats collector for web
     from trafficgoat.stats import StatsCollector

@@ -1,9 +1,12 @@
 """Web UI routes and API endpoints."""
 
+import collections
 import functools
 import hmac
 import logging
 import os
+import threading
+import time
 from flask import Blueprint, Response, render_template, request, jsonify, redirect
 from flask_socketio import emit, disconnect
 
@@ -48,6 +51,57 @@ def require_auth(fn):
     return wrapper
 
 
+# ---- Rate limiting (in-memory sliding window, per-endpoint, per-client) ----
+
+_rate_lock = threading.Lock()
+_rate_hits: dict[tuple[str, str], collections.deque] = {}
+
+
+def _client_key() -> str:
+    """Identify a client for rate-limiting.
+
+    Prefer the auth token (so each user is bucketed separately even behind a
+    shared reverse proxy); fall back to the remote address.
+    """
+    token = _extract_token()
+    if token:
+        # Hash so we don't keep a live token in a long-lived dict.
+        return "tok:" + hmac.new(b"trafficgoat-ratelimit", token.encode(),
+                                 digestmod="sha256").hexdigest()[:32]
+    return "ip:" + (request.remote_addr or "unknown")
+
+
+def rate_limit(*, max_calls: int, window_seconds: float):
+    """Decorator: reject more than `max_calls` per `window_seconds` per client."""
+    def decorator(fn):
+        endpoint = fn.__name__
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            now = time.monotonic()
+            key = (endpoint, _client_key())
+            with _rate_lock:
+                bucket = _rate_hits.get(key)
+                if bucket is None:
+                    bucket = collections.deque()
+                    _rate_hits[key] = bucket
+                cutoff = now - window_seconds
+                while bucket and bucket[0] < cutoff:
+                    bucket.popleft()
+                if len(bucket) >= max_calls:
+                    retry_after = max(1, int(window_seconds - (now - bucket[0])))
+                    resp = jsonify({
+                        "error": "Too Many Requests",
+                        "retry_after_seconds": retry_after,
+                    })
+                    resp.headers["Retry-After"] = str(retry_after)
+                    return resp, 429
+                bucket.append(now)
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
 @bp.route("/")
 def dashboard():
     return render_template("dashboard.html")
@@ -73,6 +127,7 @@ def logs_page():
 
 @bp.route("/api/start", methods=["POST"])
 @require_auth
+@rate_limit(max_calls=3, window_seconds=10)
 def api_start():
     """Start traffic generation."""
     data = request.get_json(silent=True) or {}
@@ -166,6 +221,7 @@ def api_start():
 
 @bp.route("/api/stop", methods=["POST"])
 @require_auth
+@rate_limit(max_calls=5, window_seconds=10)
 def api_stop():
     """Stop traffic generation."""
     with get_engine_lock():
@@ -218,6 +274,7 @@ def api_modes():
 
 @bp.route("/api/logs", methods=["GET"])
 @require_auth
+@rate_limit(max_calls=30, window_seconds=5)
 def api_logs():
     """Get recent log messages."""
     stats = get_stats()
@@ -228,6 +285,7 @@ def api_logs():
 
 @bp.route("/api/history", methods=["GET"])
 @require_auth
+@rate_limit(max_calls=30, window_seconds=5)
 def api_history():
     """Get session history."""
     history = get_session_history()

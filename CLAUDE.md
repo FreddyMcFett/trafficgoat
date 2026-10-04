@@ -116,8 +116,19 @@ Common safety flags (most modes):
 Web flags: `--host`, `--web-port`, `--dev` (unsafe werkzeug dev server), plus the safety flags above.
 
 Web environment variables:
-- `TRAFFICGOAT_TOKEN` — set the API auth token (set to empty string to disable auth; warning printed).
+- `TRAFFICGOAT_TOKEN` — set the API auth token. If unset, one is generated and
+  written to a `0600` file (path printed at startup; the token itself is **never**
+  printed to stdout). Set to empty string to disable auth (warning printed).
 - `TRAFFICGOAT_SECRET_KEY` — Flask session secret (auto-generated if unset).
+- `TRAFFICGOAT_CORS_ORIGINS` — comma-separated Socket.IO CORS allowlist (or
+  `*`). Defaults to the configured `host:port`; `--allow-public` does *not*
+  widen this.
+
+Web API hardening:
+- Rate limits (per-token-or-IP, per-endpoint, in-memory sliding window):
+  `/api/start` 3/10s · `/api/stop` 5/10s · `/api/logs` 30/5s · `/api/history` 30/5s.
+  Excess requests return `429` with a `Retry-After` header.
+- Request body capped at 1 MiB (`MAX_CONTENT_LENGTH`).
 
 ## Development Notes
 
